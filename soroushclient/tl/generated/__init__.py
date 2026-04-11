@@ -1,0 +1,26 @@
+from .types.auth    import *
+from .types.bots    import *
+from .types.channels    import *
+from .types.chats import *
+from .types.core     import *
+from .types.dialogs  import *
+from .types.documents   import *
+from .types.geopoints   import *
+from .types.inputs   import *
+from .types.notifications   import *
+from .types.peers   import *
+from .types.messages   import *
+from .types.notifications   import *
+from .types.peers   import *
+from .types.photoes   import *
+from .types.updates   import *
+from .types.users   import *
+from .types.videos   import *
+from .types.webpages   import *
+
+from .functions.auth     import *
+from .functions.chats import *
+from .functions.channels import *
+from .functions.dialogs import *
+
+from ...errors.base import *
