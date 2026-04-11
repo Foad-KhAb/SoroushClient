@@ -21,7 +21,9 @@ class TLWriter:
             self._buf += bytes([n]) + data
             pad = (-n - 1) % 4
         else:
-            self._buf += bytes([254, n & 0xff, (n >> 8) & 0xff, (n >> 16) & 0xff]) + data
+            self._buf += (
+                bytes([254, n & 0xFF, (n >> 8) & 0xFF, (n >> 16) & 0xFF]) + data
+            )
             pad = (-n) % 4
         self._buf += bytes(pad)
         return self

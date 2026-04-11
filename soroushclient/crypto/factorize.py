@@ -1,10 +1,14 @@
 def _factorize(pq: int):
     import random
+
     if pq % 2 == 0:
         return 2, pq // 2
+
     def gcd(a, b):
-        while b: a, b = b, a % b
+        while b:
+            a, b = b, a % b
         return a
+
     x = random.randint(2, pq - 1)
     y, c, d = x, random.randint(1, pq - 1), 1
     while d == 1:

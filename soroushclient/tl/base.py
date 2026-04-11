@@ -1,20 +1,21 @@
+import logging
 from dataclasses import dataclass
-from typing import List, Dict, Type, Optional
+from typing import Dict, List, Optional, Type
 
 from soroushclient.tl.reader import TLReader
 
-import logging
 logger = logging.getLogger(__name__)
+
 
 @dataclass
 class TLField:
-    name:           str
-    type:           str
-    flag_group:     int  = 0
-    flag_bit:       int  = -1
+    name: str
+    type: str
+    flag_group: int = 0
+    flag_bit: int = -1
     flag_indicator: bool = False
-    is_vector:      bool = False
-    skip_cid:       bool = False
+    is_vector: bool = False
+    skip_cid: bool = False
 
 
 class TLObject:
@@ -26,6 +27,7 @@ class TLObject:
         super().__init_subclass__(**kwargs)
         if cls.CONSTRUCTOR_ID:
             TLObject._registry[cls.CONSTRUCTOR_ID] = cls
+
     def __init__(self, **kwargs):
         for f in self.FIELDS:
             if not f.flag_indicator:
@@ -34,10 +36,12 @@ class TLObject:
     @classmethod
     def from_reader(cls, r: TLReader) -> "TLObject":
         from soroushclient.tl.codec import _deserialize
+
         return _deserialize(cls, r)
 
     def to_bytes(self) -> bytes:
         from soroushclient.tl.codec import _serialize
+
         return _serialize(self)
 
     def to_dict(self) -> dict:
@@ -50,7 +54,8 @@ class TLObject:
     def __repr__(self):
         parts = ", ".join(
             f"{f.name}={getattr(self, f.name, None)!r}"
-            for f in self.FIELDS if not f.flag_indicator
+            for f in self.FIELDS
+            if not f.flag_indicator
         )
         return f"{self.__class__.__name__}({parts})"
 
@@ -65,6 +70,7 @@ class TLObject:
         except Exception as e:
             return UnknownObject(cid, error=str(e))
 
+
 class UnknownObject(TLObject):
     def __init__(self, cid: int, error: Optional[str] = None):
         super().__init__()
@@ -73,6 +79,7 @@ class UnknownObject(TLObject):
 
     def __repr__(self):
         return f"UnknownObject(cid={self.cid:#010x}, error={self.error!r})"
+
 
 class TLRequest(TLObject):
     RESPONSE_TYPE: Type[TLObject] = None

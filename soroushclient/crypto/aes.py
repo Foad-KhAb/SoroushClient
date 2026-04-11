@@ -9,17 +9,19 @@ def _aes_ecb(key: bytes, block: bytes, encrypt: bool) -> bytes:
     op = cipher.encryptor() if encrypt else cipher.decryptor()
     return op.update(block) + op.finalize()
 
+
 def aes_ige_encrypt(data: bytes, key: bytes, iv: bytes) -> bytes:
     if len(data) % 16:
         data += bytes(16 - len(data) % 16)
     iv_o, iv_i = iv[0:16], iv[16:32]
     out = bytearray()
     for i in range(0, len(data), 16):
-        plain  = data[i:i+16]
+        plain = data[i : i + 16]
         cipher = xor(_aes_ecb(key, xor(plain, iv_o), True), iv_i)
-        out   += cipher
+        out += cipher
         iv_i, iv_o = plain, cipher
     return bytes(out)
+
 
 def aes_ige_decrypt(data: bytes, key: bytes, iv: bytes) -> bytes:
     if len(data) % 16:
@@ -27,11 +29,12 @@ def aes_ige_decrypt(data: bytes, key: bytes, iv: bytes) -> bytes:
     iv_o, iv_i = iv[0:16], iv[16:32]
     out = bytearray()
     for i in range(0, len(data), 16):
-        cipher = data[i:i+16]
-        plain  = xor(_aes_ecb(key, xor(cipher, iv_i), False), iv_o)
-        out   += plain
+        cipher = data[i : i + 16]
+        plain = xor(_aes_ecb(key, xor(cipher, iv_i), False), iv_o)
+        out += plain
         iv_o, iv_i = cipher, plain
     return bytes(out)
+
 
 def aes_ctr(key: bytes, iv: bytes):
     cipher = Cipher(algorithms.AES(key), modes.CTR(iv), backend=default_backend())

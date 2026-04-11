@@ -1,26 +1,27 @@
 import asyncio
+import logging
 import os
+import ssl as ssl_mod
 import struct
 
 import websockets
-import ssl as ssl_mod
+
 from soroushclient.crypto.aes import aes_ctr
 
-import logging
 logger = logging.getLogger(__name__)
 
-WS_URI    = "wss://im-server.splus.ir/apiws"
+WS_URI = "wss://im-server.splus.ir/apiws"
 WS_ORIGIN = "https://web.splus.ir"
-WS_UA     = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/124.0 Safari/537.36"
+WS_UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/124.0 Safari/537.36"
 OBFUSCATE_TAG = bytes.fromhex("efefefef")
 
 
 class ObfuscatedTransport:
     def __init__(self):
-        self._ws      = None
+        self._ws = None
         self._encrypt = None
         self._decrypt = None
-        self._lock    = None
+        self._lock = None
 
     def _init_header(self) -> bytes:
         FORBIDDEN = [
@@ -31,23 +32,26 @@ class ObfuscatedTransport:
         ]
         while True:
             n = bytearray(os.urandom(64))
-            if n[0] == 0xef: continue
-            if n[4:8] == b'\x00\x00\x00\x00': continue
-            if any(n[:len(p)] == bytearray(p) for p in FORBIDDEN): continue
+            if n[0] == 0xEF:
+                continue
+            if n[4:8] == b"\x00\x00\x00\x00":
+                continue
+            if any(n[: len(p)] == bytearray(p) for p in FORBIDDEN):
+                continue
             break
 
         enc_key = bytes(n[8:40])
-        enc_iv  = bytes(n[40:56])
-        rev     = bytes(n[8:56])[::-1]
+        enc_iv = bytes(n[40:56])
+        rev = bytes(n[8:56])[::-1]
         dec_key = rev[0:32]
-        dec_iv  = rev[32:48]
+        dec_iv = rev[32:48]
 
         enc = aes_ctr(enc_key, enc_iv)
         dec = aes_ctr(dec_key, dec_iv)
 
         n[56:60] = OBFUSCATE_TAG
         encrypted = bytearray(enc.update(bytes(n)))
-        n[56:64]  = encrypted[56:64]
+        n[56:64] = encrypted[56:64]
 
         self._encrypt = aes_ctr(enc_key, enc_iv)
         self._encrypt.update(bytes(64))
@@ -57,16 +61,16 @@ class ObfuscatedTransport:
 
     async def connect(self):
         self._lock = asyncio.Lock()
-        ssl_ctx    = ssl_mod.create_default_context()
-        self._ws   = await websockets.connect(
+        ssl_ctx = ssl_mod.create_default_context()
+        self._ws = await websockets.connect(
             WS_URI,
             ssl=ssl_ctx,
             subprotocols=["binary"],
             additional_headers={
-                "Origin":          WS_ORIGIN,
-                "User-Agent":      WS_UA,
+                "Origin": WS_ORIGIN,
+                "User-Agent": WS_UA,
                 "Accept-Language": "fa-IR,fa;q=0.9,en;q=0.8",
-                "Cache-Control":   "no-cache",
+                "Cache-Control": "no-cache",
             },
             ping_interval=20,
             ping_timeout=10,
@@ -84,21 +88,21 @@ class ObfuscatedTransport:
     async def send(self, payload: bytes):
         assert len(payload) % 4 == 0, f"payload not multiple of 4: {len(payload)}"
         n = len(payload) // 4
-        if n < 0x7f:
+        if n < 0x7F:
             frame = bytes([n]) + payload
         else:
-            frame = bytes([0x7f, n & 0xff, (n >> 8) & 0xff, (n >> 16) & 0xff]) + payload
+            frame = bytes([0x7F, n & 0xFF, (n >> 8) & 0xFF, (n >> 16) & 0xFF]) + payload
         encrypted = self._encrypt.update(frame)
         async with self._lock:
             await self._ws.send(encrypted)
 
     async def recv(self) -> bytes:
-        raw       = await self._ws.recv()
+        raw = await self._ws.recv()
         if isinstance(raw, str):
             raw = raw.encode()
         decrypted = self._decrypt.update(raw)
         first = decrypted[0]
-        if first == 0x7f:
+        if first == 0x7F:
             payload = decrypted[4:]
         else:
             payload = decrypted[1:]
