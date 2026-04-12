@@ -1,11 +1,25 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, List, Optional
+
 from soroushclient.tl.base import TLField, TLObject
+from soroushclient.tl.generated.types.base_types import Chat
+
+if TYPE_CHECKING:
+    from soroushclient.tl.generated import (
+        ChatAdminRights,
+        ChatBannedRights,
+        ChatPhoto,
+        PeerColor,
+        RestrictionReason,
+        Username,
+    )
 
 
-class Channel(TLObject):
+class Channel(Chat):
     CONSTRUCTOR_ID = 0x8E87CCD8
     FIELDS = [
         TLField("flags", "int", flag_group=0, flag_indicator=True),
-        TLField("flags2", "int", flag_group=1, flag_indicator=True),
         TLField("creator", "true", flag_group=0, flag_bit=0),
         TLField("left", "true", flag_group=0, flag_bit=2),
         TLField("broadcast", "true", flag_group=0, flag_bit=5),
@@ -26,6 +40,7 @@ class Channel(TLObject):
         TLField("join_to_send", "true", flag_group=0, flag_bit=28),
         TLField("join_request", "true", flag_group=0, flag_bit=29),
         TLField("forum", "true", flag_group=0, flag_bit=30),
+        TLField("flags2", "int", flag_group=1, flag_indicator=True),
         TLField("stories_hidden", "true", flag_group=1, flag_bit=1),
         TLField("stories_hidden_min", "true", flag_group=1, flag_bit=2),
         TLField("stories_unavailable", "true", flag_group=1, flag_bit=3),
@@ -51,18 +66,63 @@ class Channel(TLObject):
         TLField("color", "PeerColor", flag_group=1, flag_bit=7),
     ]
 
+    creator: Optional[bool]
+    left: Optional[bool]
+    broadcast: Optional[bool]
+    verified: Optional[bool]
+    megagroup: Optional[bool]
+    restricted: Optional[bool]
+    signatures: Optional[bool]
+    min: Optional[bool]
+    scam: Optional[bool]
+    has_link: Optional[bool]
+    has_geo: Optional[bool]
+    slowmode_enabled: Optional[bool]
+    call_active: Optional[bool]
+    call_not_empty: Optional[bool]
+    fake: Optional[bool]
+    gigagroup: Optional[bool]
+    noforwards: Optional[bool]
+    join_to_send: Optional[bool]
+    join_request: Optional[bool]
+    forum: Optional[bool]
+    stories_hidden: Optional[bool]
+    stories_hidden_min: Optional[bool]
+    stories_unavailable: Optional[bool]
+    id: Optional[int]
+    access_hash: Optional[int]
+    title: Optional[str]
+    username: Optional[str]
+    photo: Optional[ChatPhoto]
+    date: Optional[int]
+    restriction_reason: Optional[List[RestrictionReason]]
+    admin_rights: Optional[ChatAdminRights]
+    banned_rights: Optional[ChatBannedRights]
+    default_banned_rights: Optional[ChatBannedRights]
+    participants_count: Optional[int]
+    usernames: Optional[List[Username]]
+    stories_max_id: Optional[int]
+    color: Optional[PeerColor]
 
-class ChannelForbidden(TLObject):
+
+class ChannelForbidden(Chat):
     CONSTRUCTOR_ID = 0x17D493D5
     FIELDS = [
         TLField("flags", "int", flag_group=0, flag_indicator=True),
-        TLField("broadcast", "true", flag_group=0, flag_bit=5),
-        TLField("megagroup", "true", flag_group=0, flag_bit=8),
-        TLField("id", "long"),
-        TLField("access_hash", "long"),
-        TLField("title", "string"),
-        TLField("until_date", "int", flag_group=0, flag_bit=16),
+        TLField("broadcast", "true", flag_group=1, flag_bit=5),
+        TLField("megagroup", "true", flag_group=1, flag_bit=8),
+        TLField("id", "long", skip_cid=True),
+        TLField("access_hash", "long", skip_cid=True),
+        TLField("title", "string", skip_cid=True),
+        TLField("until_date", "int", flag_group=1, flag_bit=16, skip_cid=True),
     ]
+
+    broadcast: Optional[bool]
+    megagroup: Optional[bool]
+    id: Optional[int]
+    access_hash: Optional[int]
+    title: Optional[str]
+    until_date: Optional[int]
 
 
 class ChannelFull(TLObject):

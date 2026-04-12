@@ -19,9 +19,11 @@ from soroushclient.tl.generated import (
     CodeSettings,
     GetFullChannelRequest,
     InputChannel,
+    InputPeer,
     InputPeerEmpty,
     JoinChannelRequest,
     LeaveChannelRequest,
+    ResolvedPeer,
     ResolveUsername,
     SendCodeRequest,
     SentCode,
@@ -29,6 +31,7 @@ from soroushclient.tl.generated import (
 )
 from soroushclient.tl.generated.functions.chats import GetFullChatRequest
 from soroushclient.tl.generated.functions.dialogs import GetDialogsRequest
+from soroushclient.tl.generated.functions.messages import GetHistoryRequest
 from soroushclient.tl.reader import TLReader
 from soroushclient.tl.writer import TLWriter
 
@@ -46,6 +49,7 @@ class SoroushClient:
         self._phone_code_hash = None
         self._pending: dict = {}
         self._recv_task = None
+        self._initialized = False
 
     async def connect(self):
         await self._transport.connect()
@@ -166,15 +170,17 @@ class SoroushClient:
 
     def _wrap_init(self, query: bytes) -> bytes:
         init = TLWriter()
-        init.write_int(0xC1CD5EA9, signed=False)
-        init.write_int(0, signed=False)
-        init.write_int(self.api_id)
-        init.write_string("SoroushClient")
-        init.write_string("1.0.0")
-        init.write_string("1.0.0")
-        init.write_string("fa")
-        init.write_string("")
-        init.write_string("fa")
+        init.write_int(0xC1CD5EA9, signed=False)  # initConnection CID
+        init.write_int(0, signed=False)  # flags
+        init.write_int(self.api_id)  # api_id
+        init.write_string("Web")  # device_model
+        init.write_string("1.0")  # system_version
+        init.write_string("1.0")  # app_version
+        init.write_string("fa")  # lang_code       ← first
+        init.write_string("")  # lang_pack       ← second
+        init.write_string("fa")  # system_lang_code ← third
+        # proxy → absent (flags bit 0 = 0)
+        # params → absent (flags bit 1 = 0)
         init.write_raw(query)
 
         w = TLWriter()
@@ -182,6 +188,12 @@ class SoroushClient:
         w.write_int(181)
         w.write_raw(init.getvalue())
         return w.getvalue()
+
+    def _maybe_wrap(self, query: bytes) -> bytes:
+        if not self._initialized:
+            self._initialized = True
+            return self._wrap_init(query)
+        return query
 
     async def send_code(self, phone: str) -> SentCode:
         req = SendCodeRequest(
@@ -215,7 +227,7 @@ class SoroushClient:
             limit=limit,
             hash=hash,
         )
-        cid, r = await self._call(self._wrap_init(req.to_bytes()))
+        cid, r = await self._call(self._maybe_wrap(req.to_bytes()))
         return req.parse_response(cid, r)
 
     async def get_full_channel(self, channel: InputChannel) -> TLObject:
@@ -238,14 +250,164 @@ class SoroushClient:
         cid, r = await self._call(self._wrap_init(req.to_bytes()))
         return req.parse_response(cid, r)
 
-    async def search(self, query: str, limit=20) -> TLObject:
+    async def search(self, query: str, limit: int = 20) -> TLObject:
+        """
+        Search for users and channels globally by name or username.
+
+        This is the global contact/peer search — equivalent to typing
+        a name or username into the Soroush search bar.
+
+        Parameters
+        ----------
+        query : str
+            The search term to look up.
+            Can be a username, full name, or partial name.
+            Examples: "soroush", "john doe", "@channel"
+
+        limit : int, optional
+            Maximum number of results to return. Default is 20.
+
+        Returns
+        -------
+        TLObject
+            A Found object containing:
+            - my_results : list of Peer objects from your own contacts/chats
+                           that match the query (shown first in UI)
+            - results    : list of Peer objects from global search results
+            - chats      : list of Chat/Channel objects referenced in
+                           my_results and results — look up by peer.channel_id
+            - users      : list of User objects referenced in
+                           my_results and results — look up by peer.user_id
+
+        Examples
+        --------
+        found = await client.search("soroush", limit=10)
+
+        # get full object for each result
+        users_by_id   = {u.id: u for u in found.users}
+        chats_by_id   = {c.id: c for c in found.chats}
+
+        for peer in found.results:
+            if isinstance(peer, PeerUser):
+                print(users_by_id[peer.user_id])
+            elif isinstance(peer, PeerChannel):
+                print(chats_by_id[peer.channel_id])
+        """
         from soroushclient.tl.generated.functions.contacts import SearchRequest
 
         req = SearchRequest(q=query, limit=limit)
         cid, r = await self._call(self._wrap_init(req.to_bytes()))
         return req.parse_response(cid, r)
 
-    async def resolve_username(self, username: str) -> TLObject:
+    async def resolve_username(self, username: str) -> ResolvedPeer:
+        """
+        Resolve a username to its full peer information.
+
+        This is the method called when a user taps on a @username link —
+        it returns the full user or channel object behind the username.
+
+        Parameters
+        ----------
+        username : str
+            The username to resolve, with or without the @ prefix.
+            Examples: "soroush", "@soroush"
+
+        Returns
+        -------
+        TLObject
+            A ResolvedPeer object containing:
+            - peer:   Peer object identifying the type and ID (PeerUser or PeerChannel)
+            - chats:  list of Chat/Channel objects if the username belongs to a channel
+            - users:  list of User objects if the username belongs to a user
+
+        Examples
+        --------
+        result = await client.resolve_username("soroush")
+        peer = result.peer
+
+        if isinstance(peer, PeerChannel):
+            channel = next(c for c in result.chats if c.id == peer.channel_id)
+
+        if isinstance(peer, PeerUser):
+            user = next(u for u in result.users if u.id == peer.user_id)
+        """
         req = ResolveUsername(username=username)
         cid, r = await self._call(self._wrap_init(req.to_bytes()))
+        return req.parse_response(cid, r)
+
+    async def get_history(
+        self,
+        peer: InputPeer,
+        offset_id: int = 0,
+        offset_date: int = 0,
+        add_offset: int = 0,
+        limit: int = 20,
+        max_id: int = 0,
+        min_id: int = 0,
+        hash: int = 0,
+    ) -> TLObject:
+        """
+        Fetch the message history of a chat, channel, or user.
+
+        Parameters
+        ----------
+        peer : InputPeer
+            The target conversation to fetch messages from.
+            Use InputPeerChannel, InputPeerUser, or InputPeerChat.
+
+        offset_id : int, optional
+            Start fetching from this message ID (exclusive).
+            Messages older than this ID are returned.
+            Use 0 to start from the most recent message.
+
+        offset_date : int, optional
+            Start fetching from this Unix timestamp.
+            Only used when offset_id is 0.
+            Use 0 to ignore date filtering.
+
+        add_offset : int, optional
+            Shift the result window relative to offset_id.
+            Positive values skip forward, negative values skip backward.
+            Useful for centering results around a specific message.
+            Use 0 for normal sequential reading.
+
+        limit : int, optional
+            Maximum number of messages to return. Default is 20, max is 100.
+
+        max_id : int, optional
+            Only return messages with ID less than or equal to this value.
+            Use 0 for no upper bound.
+
+        min_id : int, optional
+            Only return messages with ID greater than or equal to this value.
+            Use 0 for no lower bound.
+
+        hash : int, optional
+            Client-side cache hash for detecting unchanged results.
+            Server returns MessagesNotModified if history hasn't changed.
+            Use 0 to always fetch fresh results.
+
+        Returns
+        -------
+        TLObject
+            A Messages or MessagesSlice object containing:
+            - messages: list of Message objects
+            - chats:    list of Chat/Channel objects referenced in messages
+            - users:    list of User objects referenced in messages
+        """
+        req = GetHistoryRequest(
+            peer=peer,
+            offset_id=offset_id,
+            offset_date=offset_date,
+            add_offset=add_offset,
+            limit=limit,
+            max_id=max_id,
+            min_id=min_id,
+            hash=hash,
+        )
+        raw = req.to_bytes()
+
+        print("GetHistory bytes:", raw.hex())
+
+        cid, r = await self._call(self._maybe_wrap(req.to_bytes()))
         return req.parse_response(cid, r)

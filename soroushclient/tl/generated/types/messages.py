@@ -1,4 +1,11 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, List, Optional
+
 from soroushclient.tl.base import TLField, TLObject
+
+if TYPE_CHECKING:
+    from soroushclient.tl.generated import Chat, Peer, PeerNotifySettings, User
 
 
 class DraftMessageEmpty(TLObject):
@@ -466,3 +473,87 @@ class Messages(TLObject):
         TLField("chats", "Chat", is_vector=True),
         TLField("users", "User", is_vector=True),
     ]
+
+
+class MessagesSlice(TLObject):
+    CONSTRUCTOR_ID = 0x3A54F328
+    FIELDS = [
+        TLField("flags", "int", flag_group=0, flag_indicator=True),
+        TLField("inexact", "true", flag_group=1, flag_bit=1),
+        TLField("count", "int", skip_cid=True),
+        TLField("next_rate", "int", flag_group=1, flag_bit=0),
+        TLField("offset_id_offset", "int", flag_group=1, flag_bit=2),
+        TLField("messages", "Message", is_vector=True),
+        TLField("chats", "Chat", is_vector=True),
+        TLField("users", "User", is_vector=True),
+    ]
+
+
+class ForumTopic(TLObject):
+    CONSTRUCTOR_ID = 0x71701DA9
+    FIELDS = [
+        TLField("flags", "int", flag_group=0, flag_indicator=True),
+        TLField("my", "true", flag_group=0, flag_bit=1),
+        TLField("closed", "true", flag_group=0, flag_bit=2),
+        TLField("pinned", "true", flag_group=0, flag_bit=3),
+        TLField("short", "true", flag_group=0, flag_bit=5),
+        TLField("hidden", "true", flag_group=0, flag_bit=6),
+        TLField("id", "int"),
+        TLField("date", "int"),
+        TLField("title", "string"),
+        TLField("icon_color", "int"),
+        TLField("icon_emoji_id", "long", flag_group=0, flag_bit=0),
+        TLField("top_message", "int"),
+        TLField("read_inbox_max_id", "int"),
+        TLField("read_outbox_max_id", "int"),
+        TLField("unread_count", "int"),
+        TLField("unread_mentions_count", "int"),
+        TLField("unread_reactions_count", "int"),
+        TLField("from_id", "Peer"),
+        TLField("notify_settings", "PeerNotifySettings"),
+        TLField("draft", "DraftMessage", flag_group=0, flag_bit=4),
+    ]
+
+    my: Optional[bool]
+    closed: Optional[bool]
+    pinned: Optional[bool]
+    short: Optional[bool]
+    hidden: Optional[bool]
+    id: Optional[int]
+    date: Optional[int]
+    title: Optional[str]
+    icon_color: Optional[int]
+    icon_emoji_id: Optional[int]
+    top_message: Optional[int]
+    read_inbox_max_id: Optional[int]
+    read_outbox_max_id: Optional[int]
+    unread_count: Optional[int]
+    unread_mentions_count: Optional[int]
+    unread_reactions_count: Optional[int]
+    from_id: Optional[Peer]
+    notify_settings: Optional[PeerNotifySettings]
+    draft: Optional[DraftMessage]
+
+
+class ChannelMessages(TLObject):
+    CONSTRUCTOR_ID = 0xC776BA4E
+    FIELDS = [
+        TLField("flags", "int", flag_group=0, flag_indicator=True),
+        TLField("inexact", "true", flag_group=0, flag_bit=1),
+        TLField("pts", "int"),
+        TLField("count", "int"),
+        TLField("offset_id_offset", "int", flag_group=0, flag_bit=2),
+        TLField("messages", "Message", is_vector=True),
+        TLField("topics", "ForumTopic", is_vector=True),
+        TLField("chats", "Chat", is_vector=True),
+        TLField("users", "User", is_vector=True),
+    ]
+
+    inexact: Optional[bool]
+    pts: Optional[int]
+    count: Optional[int]
+    offset_id_offset: Optional[int]
+    messages: Optional[List[Message]]
+    topics: Optional[List[ForumTopic]]
+    chats: Optional[List[Chat]]
+    users: Optional[List[User]]

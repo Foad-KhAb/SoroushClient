@@ -1,32 +1,33 @@
 from soroushclient.tl.base import TLField, TLObject
+from soroushclient.tl.generated.types.base_types import InputPeer
 
 
-class InputPeerEmpty(TLObject):
+class InputPeerEmpty(InputPeer):
     CONSTRUCTOR_ID = 0x7F3B18EA
     FIELDS = []
 
 
-class InputPeerSelf(TLObject):
+class InputPeerSelf(InputPeer):
     CONSTRUCTOR_ID = 0x7DA07EC9
     FIELDS = []
 
 
-class InputPeerChat(TLObject):
+class InputPeerChat(InputPeer):
     CONSTRUCTOR_ID = 0x35A95CB9
     FIELDS = [TLField("chat_id", "long")]
 
 
-class InputPeerUser(TLObject):
+class InputPeerUser(InputPeer):
     CONSTRUCTOR_ID = 0xDDE8A54C
     FIELDS = [TLField("user_id", "long"), TLField("access_hash", "long")]
 
 
-class InputPeerChannel(TLObject):
+class InputPeerChannel(InputPeer):
     CONSTRUCTOR_ID = 0x27BCBBFC
     FIELDS = [TLField("channel_id", "long"), TLField("access_hash", "long")]
 
 
-class InputPeerUserFromMessage(TLObject):
+class InputPeerUserFromMessage(InputPeer):
     CONSTRUCTOR_ID = 0xA87B0A1C
     FIELDS = [
         TLField("peer", "InputPeer"),
@@ -35,7 +36,7 @@ class InputPeerUserFromMessage(TLObject):
     ]
 
 
-class InputPeerChannelFromMessage(TLObject):
+class InputPeerChannelFromMessage(InputPeer):
     CONSTRUCTOR_ID = 0xBD2A0840
     FIELDS = [
         TLField("peer", "InputPeer"),

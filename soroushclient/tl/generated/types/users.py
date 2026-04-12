@@ -1,3 +1,5 @@
+from typing import Optional
+
 from soroushclient.tl.base import TLField, TLObject
 
 
@@ -134,3 +136,17 @@ class User(TLObject):
         TLField("stories_hidden", "true", flag_group=1, flag_bit=3),
         TLField("stories_unavailable", "true", flag_group=1, flag_bit=4),
     ]
+
+
+class Username(TLObject):
+    CONSTRUCTOR_ID = 0xB4073647
+    FIELDS = [
+        TLField("flags", "int", flag_group=0, flag_indicator=True),
+        TLField("editable", "true", flag_group=1, flag_bit=0),
+        TLField("active", "true", flag_group=1, flag_bit=1),
+        TLField("username", "string", skip_cid=True),
+    ]
+
+    editable: Optional[bool]
+    active: Optional[bool]
+    username: Optional[str]

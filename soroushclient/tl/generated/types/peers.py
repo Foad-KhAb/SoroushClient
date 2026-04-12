@@ -1,22 +1,23 @@
-from soroushclient.tl.base import TLField, TLObject
+from soroushclient.tl.base import TLField
+from soroushclient.tl.generated.types.base_types import Peer
 
 
-class PeerUser(TLObject):
+class PeerUser(Peer):
     CONSTRUCTOR_ID = 0x59511722
     FIELDS = [TLField("user_id", "long")]
 
 
-class PeerChat(TLObject):
+class PeerChat(Peer):
     CONSTRUCTOR_ID = 0x36C6019A
     FIELDS = [TLField("chat_id", "long")]
 
 
-class PeerChannel(TLObject):
+class PeerChannel(Peer):
     CONSTRUCTOR_ID = 0xA2A5371E
     FIELDS = [TLField("channel_id", "long")]
 
 
-class PeerColor(TLObject):
+class PeerColor(Peer):
     CONSTRUCTOR_ID = 0xB54B5ACF
     FIELDS = [
         TLField("flags", "int", flag_group=0, flag_indicator=True),
@@ -24,7 +25,7 @@ class PeerColor(TLObject):
     ]
 
 
-class PeerNotifySettings(TLObject):
+class PeerNotifySettings(Peer):
     CONSTRUCTOR_ID = 0x99622C0C
     FIELDS = [
         TLField("flags", "int", flag_group=0, flag_indicator=True),

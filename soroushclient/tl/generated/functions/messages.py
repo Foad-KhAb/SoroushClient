@@ -2,8 +2,8 @@ from soroushclient.tl.base import TLField, TLRequest
 from soroushclient.tl.generated import Messages
 
 
-class GetHistory(TLRequest):
-    CONSTRUCTOR_ID = 0x44290685
+class GetHistoryRequest(TLRequest):
+    CONSTRUCTOR_ID = 0x4423E6C5
     RESPONSE_TYPE = Messages
     FIELDS = [
         TLField("peer", "InputPeer"),
