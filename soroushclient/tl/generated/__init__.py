@@ -2,6 +2,7 @@ from ...errors.base import *
 from .functions.auth import *
 from .functions.channels import *
 from .functions.chats import *
+from .functions.contacts import *
 from .functions.dialogs import *
 from .types.auth import *
 from .types.bots import *

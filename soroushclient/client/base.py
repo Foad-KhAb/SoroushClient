@@ -22,6 +22,7 @@ from soroushclient.tl.generated import (
     InputPeerEmpty,
     JoinChannelRequest,
     LeaveChannelRequest,
+    ResolveUsername,
     SendCodeRequest,
     SentCode,
     SignInRequest,
@@ -45,8 +46,6 @@ class SoroushClient:
         self._phone_code_hash = None
         self._pending: dict = {}
         self._recv_task = None
-
-    # ── lifecycle ─────────────────────────────────────────
 
     async def connect(self):
         await self._transport.connect()
@@ -73,8 +72,6 @@ class SoroushClient:
     async def __aexit__(self, *_):
         await self.disconnect()
 
-    # ── session ───────────────────────────────────────────
-
     def _save_session(self):
         with open(self.session_file, "w") as f:
             json.dump(
@@ -98,8 +95,6 @@ class SoroushClient:
         self._session.session_id = d["session_id"]
         logger.info("[client] Session loaded from disk.")
         return True
-
-    # ── recv loop ─────────────────────────────────────────
 
     async def _recv_loop(self):
         while True:
@@ -149,8 +144,6 @@ class SoroushClient:
         else:
             logger.warning(f"[dispatch] unhandled cid={cid:#010x}")
 
-    # ── internal ──────────────────────────────────────────
-
     async def _ping(self):
         import random
 
@@ -190,8 +183,6 @@ class SoroushClient:
         w.write_raw(init.getvalue())
         return w.getvalue()
 
-    # ── auth ──────────────────────────────────────────────
-
     async def send_code(self, phone: str) -> SentCode:
         req = SendCodeRequest(
             phone_number=phone,
@@ -214,23 +205,25 @@ class SoroushClient:
         cid, r = await self._call(req.to_bytes())
         return req.parse_response(cid, r)
 
-    async def get_dialogs(self, limit=20) -> TLObject:
+    async def get_dialogs(
+        self, offset_date=0, offset_id=0, offset_peer=InputPeerEmpty(), limit=20, hash=0
+    ) -> TLObject:
         req = GetDialogsRequest(
-            offset_date=0,
-            offset_id=0,
-            offset_peer=InputPeerEmpty(),
+            offset_date=offset_date,
+            offset_id=offset_id,
+            offset_peer=offset_peer,
             limit=limit,
-            hash=0,
+            hash=hash,
         )
         cid, r = await self._call(self._wrap_init(req.to_bytes()))
         return req.parse_response(cid, r)
 
-    async def get_full_channel(self, channel) -> TLObject:
+    async def get_full_channel(self, channel: InputChannel) -> TLObject:
         req = GetFullChannelRequest(channel=channel)
         cid, r = await self._call(self._wrap_init(req.to_bytes()))
         return req.parse_response(cid, r)
 
-    async def get_full_chat(self, chat_id) -> TLObject:
+    async def get_full_chat(self, chat_id: str) -> TLObject:
         req = GetFullChatRequest(chat_id=chat_id)
         cid, r = await self._call(self._wrap_init(req.to_bytes()))
         return req.parse_response(cid, r)
@@ -242,5 +235,17 @@ class SoroushClient:
 
     async def leave_channel(self, channel: InputChannel) -> TLObject:
         req = LeaveChannelRequest(channel=channel)
+        cid, r = await self._call(self._wrap_init(req.to_bytes()))
+        return req.parse_response(cid, r)
+
+    async def search(self, query: str, limit=20) -> TLObject:
+        from soroushclient.tl.generated.functions.contacts import SearchRequest
+
+        req = SearchRequest(q=query, limit=limit)
+        cid, r = await self._call(self._wrap_init(req.to_bytes()))
+        return req.parse_response(cid, r)
+
+    async def resolve_username(self, username: str) -> TLObject:
+        req = ResolveUsername(username=username)
         cid, r = await self._call(self._wrap_init(req.to_bytes()))
         return req.parse_response(cid, r)

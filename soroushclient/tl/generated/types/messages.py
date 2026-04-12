@@ -457,3 +457,12 @@ class MessageActionGiftPremium(TLObject):
         TLField("crypto_currency", "string", flag_group=0, flag_bit=0),
         TLField("crypto_amount", "long", flag_group=0, flag_bit=0),
     ]
+
+
+class Messages(TLObject):
+    CONSTRUCTOR_ID = 0x8C718E87
+    FIELDS = [
+        TLField("messages", "Message", is_vector=True),
+        TLField("chats", "Chat", is_vector=True),
+        TLField("users", "User", is_vector=True),
+    ]
