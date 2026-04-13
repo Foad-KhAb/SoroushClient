@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, List, Optional
 
 from soroushclient.tl.base import TLField, TLObject
+from soroushclient.tl.generated import BaseMessage
 
 if TYPE_CHECKING:
     from soroushclient.tl.generated import Chat, Peer, PeerNotifySettings, User
@@ -302,7 +303,7 @@ class MessageEmpty(TLObject):
     ]
 
 
-class Message(TLObject):
+class Message(BaseMessage):
     CONSTRUCTOR_ID = 0x38116EE0
     FIELDS = [
         TLField("flags", "int", flag_group=0, flag_indicator=True),
@@ -466,7 +467,7 @@ class MessageActionGiftPremium(TLObject):
     ]
 
 
-class Messages(TLObject):
+class Messages(BaseMessage):
     CONSTRUCTOR_ID = 0x8C718E87
     FIELDS = [
         TLField("messages", "Message", is_vector=True),
@@ -475,7 +476,7 @@ class Messages(TLObject):
     ]
 
 
-class MessagesSlice(TLObject):
+class MessagesSlice(BaseMessage):
     CONSTRUCTOR_ID = 0x3A54F328
     FIELDS = [
         TLField("flags", "int", flag_group=0, flag_indicator=True),
@@ -540,8 +541,8 @@ class ChannelMessages(TLObject):
     FIELDS = [
         TLField("flags", "int", flag_group=0, flag_indicator=True),
         TLField("inexact", "true", flag_group=0, flag_bit=1),
-        TLField("pts", "int"),
-        TLField("count", "int"),
+        TLField("pts", "int", skip_cid=True),
+        TLField("count", "int", skip_cid=True),
         TLField("offset_id_offset", "int", flag_group=0, flag_bit=2),
         TLField("messages", "Message", is_vector=True),
         TLField("topics", "ForumTopic", is_vector=True),
@@ -549,11 +550,29 @@ class ChannelMessages(TLObject):
         TLField("users", "User", is_vector=True),
     ]
 
-    inexact: Optional[bool]
-    pts: Optional[int]
-    count: Optional[int]
-    offset_id_offset: Optional[int]
-    messages: Optional[List[Message]]
-    topics: Optional[List[ForumTopic]]
+
+class MessageViews(TLObject):
+    CONSTRUCTOR_ID = 0x455B853D
+    FIELDS = [
+        TLField("flags", "int", flag_group=0, flag_indicator=True),
+        TLField("views", "int", flag_group=0, flag_bit=0),
+        TLField("forwards", "int", flag_group=0, flag_bit=1),
+        TLField("replies", "MessageReplies", flag_group=0, flag_bit=2),
+    ]
+
+    views: Optional[int]
+    forwards: Optional[int]
+    replies: Optional[MessageReplies]
+
+
+class MessagesMessageViews(TLObject):
+    CONSTRUCTOR_ID = 0xB6C4F543
+    FIELDS = [
+        TLField("views", "MessageViews", is_vector=True),
+        TLField("chats", "Chat", is_vector=True),
+        TLField("users", "User", is_vector=True),
+    ]
+
+    views: Optional[List[MessageViews]]
     chats: Optional[List[Chat]]
     users: Optional[List[User]]

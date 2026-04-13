@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 import os
+from typing import Callable, List
 
 import websockets
 
@@ -31,7 +32,10 @@ from soroushclient.tl.generated import (
 )
 from soroushclient.tl.generated.functions.chats import GetFullChatRequest
 from soroushclient.tl.generated.functions.dialogs import GetDialogsRequest
-from soroushclient.tl.generated.functions.messages import GetHistoryRequest
+from soroushclient.tl.generated.functions.messages import (
+    GetHistoryRequest,
+    ImportChatInvite,
+)
 from soroushclient.tl.reader import TLReader
 from soroushclient.tl.writer import TLWriter
 
@@ -50,6 +54,7 @@ class SoroushClient:
         self._pending: dict = {}
         self._recv_task = None
         self._initialized = False
+        self._update_handlers: List[Callable] = []
 
     async def connect(self):
         await self._transport.connect()
@@ -113,6 +118,44 @@ class SoroushClient:
             except Exception as e:
                 logger.info(f"[recv_loop] error: {e}")
 
+    def on_update(self, func: Callable = None):
+        """
+        Decorator to register a handler for all incoming updates.
+
+        Usage:
+            @client.on_update
+            async def handler(update):
+                print(update)
+        """
+        if func is not None:
+            self._update_handlers.append(func)
+            return func
+
+        def decorator(f):
+            self._update_handlers.append(f)
+            return f
+
+        return decorator
+
+    def add_update_handler(self, func: Callable):
+        """Register an update handler function."""
+        self._update_handlers.append(func)
+
+    def remove_update_handler(self, func: Callable):
+        """Remove a previously registered update handler."""
+        self._update_handlers.remove(func)
+
+    async def _fire_update(self, update: TLObject):
+        """Dispatch an update to all registered handlers."""
+        for handler in self._update_handlers:
+            try:
+                if asyncio.iscoroutinefunction(handler):
+                    await handler(update)
+                else:
+                    handler(update)
+            except Exception as e:
+                logger.error(f"[update] handler error: {e}")
+
     def _dispatch(self, cid: int, r: TLReader):
         if cid == ID_RPC_RESULT:
             req_msg_id = r.read_long()
@@ -120,6 +163,7 @@ class SoroushClient:
             fut = self._pending.pop(req_msg_id, None)
             if fut and not fut.done():
                 fut.set_result((inner_cid, r))
+
         elif cid == ID_MSG_CONTAINER:
             count = r.read_int()
             for _ in range(count):
@@ -128,6 +172,7 @@ class SoroushClient:
                 r.read_int()
                 inner_cid = r.read_int(signed=False)
                 self._dispatch(inner_cid, r)
+
         elif cid == ID_BAD_SERVER_SALT:
             r.read_long()
             r.read_int()
@@ -136,6 +181,7 @@ class SoroushClient:
             self._session.server_salt = new_salt
             self._save_session()
             logger.info(f"[mtproto] Salt updated: {new_salt}")
+
         elif cid == ID_NEW_SESSION:
             r.read_long()
             r.read_long()
@@ -143,10 +189,31 @@ class SoroushClient:
             self._session.server_salt = new_salt
             self._save_session()
             logger.info(f"[mtproto] New session, salt={new_salt}")
+
         elif cid == ID_MSGS_ACK:
             pass
+
+        elif cid == 0x347773C5:  # Pong
+            r.read_long()
+            r.read_long()
+            logger.debug("pong received")
+
+        elif cid == 0x74AE4240:  # Updates
+            obj = TLObject.read_object_with_cid(cid, r)
+            if obj and self._update_handlers:
+                asyncio.ensure_future(self._fire_update(obj))
+
         else:
-            logger.warning(f"[dispatch] unhandled cid={cid:#010x}")
+            cls = TLObject._registry.get(cid)
+            if cls:
+                try:
+                    obj = cls.from_reader(r)
+                    if self._update_handlers:
+                        asyncio.ensure_future(self._fire_update(obj))
+                except Exception as e:
+                    logger.warning(f"[dispatch] failed to parse cid={cid:#010x}: {e}")
+            else:
+                logger.warning(f"[dispatch] unhandled cid={cid:#010x}")
 
     async def _ping(self):
         import random
@@ -405,9 +472,76 @@ class SoroushClient:
             min_id=min_id,
             hash=hash,
         )
-        raw = req.to_bytes()
 
-        print("GetHistory bytes:", raw.hex())
+        cid, r = await self._call(self._maybe_wrap(req.to_bytes()))
+        return req.parse_response(cid, r)
 
+    async def join_by_link(self, link: str) -> TLObject:
+        """
+        Join a chat or channel via an invitation link.
+
+        Automatically extracts the hash from various Soroush invite link formats.
+
+        Parameters
+        ----------
+        link : str
+            The invite link or raw hash. Accepts all of these formats:
+            - "https://splus.ir/joingroup/ABC123"
+            - "splus.ir/joingroup/ABC123"
+            - "ABC123"  (raw hash)
+
+        Returns
+        -------
+        Updates object containing the joined chat/channel info.
+
+        Raises
+        ------
+        RpcError
+            - INVITE_HASH_EXPIRED  : link has expired
+            - INVITE_HASH_INVALID  : link is malformed
+            - USER_ALREADY_PARTICIPANT : already a member
+        """
+        hash_ = link.strip()
+        if "/" in hash_:
+            hash_ = hash_.rstrip("/").split("/")[-1]
+
+        req = ImportChatInvite(hash=hash_)
+        cid, r = await self._call(self._maybe_wrap(req.to_bytes()))
+        return req.parse_response(cid, r)
+
+    async def get_messages_views(
+        self,
+        peer: InputPeer,
+        ids: List[int],
+        increment: bool = False,
+    ) -> TLObject:
+        """
+        Fetch view counts for one or more messages in a channel.
+
+        Parameters
+        ----------
+        peer : InputPeer
+            The channel containing the messages.
+            Use InputPeerChannel(channel_id=..., access_hash=...).
+
+        ids : List[int]
+            List of message IDs to fetch views for.
+            Can pass up to 100 IDs per call.
+
+        increment : bool, optional
+            If True, counts this fetch as a real view (increments the counter).
+            If False, just reads the current count without incrementing.
+            Default is False — use True only when the user actually opens the message.
+
+        Returns
+        -------
+        MessageViews object containing:
+            - views : list of MessageViews objects, one per message ID
+            - chats : list of Chat objects referenced in the response
+            - users : list of User objects referenced in the response
+        """
+        from soroushclient.tl.generated.functions.messages import GetMessagesViews
+
+        req = GetMessagesViews(peer=peer, id=ids, increment=increment)
         cid, r = await self._call(self._maybe_wrap(req.to_bytes()))
         return req.parse_response(cid, r)

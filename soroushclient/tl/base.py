@@ -70,6 +70,16 @@ class TLObject:
         except Exception as e:
             return UnknownObject(cid, error=str(e))
 
+    @staticmethod
+    def read_object_with_cid(cid: int, r: TLReader) -> "TLObject":
+        cls = TLObject._registry.get(cid)
+        if cls is None:
+            return UnknownObject(cid)
+        try:
+            return cls.from_reader(r)
+        except Exception as e:
+            return UnknownObject(cid, error=str(e))
+
 
 class UnknownObject(TLObject):
     def __init__(self, cid: int, error: Optional[str] = None):
@@ -88,5 +98,5 @@ class TLRequest(TLObject):
         cls = TLObject._registry.get(cid)
         if cls is None:
             logger.warning(f"[tl] Unknown response constructor: {cid:#010x}")
-            return {"_": f"unknown#{cid:#010x}"}
+            return UnknownObject(cid)
         return cls.from_reader(r)

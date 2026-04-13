@@ -44,6 +44,13 @@ class TLReader:
         self._pos += n
         return data
 
+    def read_double(self) -> float:
+        import struct
+
+        v = struct.unpack_from("<d", self._data, self._pos)[0]
+        self._pos += 8
+        return v
+
     @property
     def remaining(self) -> int:
         return len(self._data) - self._pos
