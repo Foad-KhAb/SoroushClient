@@ -6,6 +6,7 @@ from typing import Callable, List
 
 import websockets
 
+from soroushclient.client.auth_cli import PhoneLoginCLI
 from soroushclient.network.constants import (
     ID_BAD_SERVER_SALT,
     ID_MSG_CONTAINER,
@@ -246,8 +247,6 @@ class SoroushClient:
         init.write_string("fa")  # lang_code       ← first
         init.write_string("")  # lang_pack       ← second
         init.write_string("fa")  # system_lang_code ← third
-        # proxy → absent (flags bit 0 = 0)
-        # params → absent (flags bit 1 = 0)
         init.write_raw(query)
 
         w = TLWriter()
@@ -261,6 +260,11 @@ class SoroushClient:
             self._initialized = True
             return self._wrap_init(query)
         return query
+
+    async def start_phone_auth(self):
+        await PhoneLoginCLI(
+            client=self,
+        ).start()
 
     async def send_code(self, phone: str) -> SentCode:
         req = SendCodeRequest(

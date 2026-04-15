@@ -1,4 +1,11 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, List, Optional
+
 from soroushclient.tl.base import TLField, TLObject
+
+if TYPE_CHECKING:
+    from soroushclient.tl.generated import DraftMessage, Peer, PeerNotifySettings
 
 
 class Dialog(TLObject):
@@ -21,11 +28,24 @@ class Dialog(TLObject):
         TLField("folder_id", "int", flag_group=0, flag_bit=4),
         TLField("ttl_period", "int", flag_group=0, flag_bit=5),
     ]
+    pinned: Optional[bool]
+    unread_mark: Optional[bool]
+    view_forum_as_messages: Optional[bool]
+    peer: Optional[Peer]
+    top_message: Optional[int]
+    read_inbox_max_id: Optional[int]
+    read_outbox_max_id: Optional[int]
+    unread_count: Optional[int]
+    unread_mentions_count: Optional[int]
+    unread_reactions_count: Optional[int]
+    notify_settings: Optional[PeerNotifySettings]
+    pts: Optional[int]
+    draft: Optional[DraftMessage]
+    folder_id: Optional[int]
+    ttl_period: Optional[int]
 
 
 class MessagesDialogs(TLObject):
-    """messages.dialogs#15ba6c40"""
-
     CONSTRUCTOR_ID = 0x15BA6C40
     FIELDS = [
         TLField("dialogs", "Dialog", is_vector=True),
@@ -34,25 +54,37 @@ class MessagesDialogs(TLObject):
         TLField("users", "User", is_vector=True),
     ]
 
+    dialogs: Optional[List[TLObject]]
+    messages: Optional[List[TLObject]]
+    chats: Optional[List[TLObject]]
+    users: Optional[List[TLObject]]
+
 
 class MessagesDialogsSlice(TLObject):
-    """messages.dialogsSlice#71e094f3"""
-
     CONSTRUCTOR_ID = 0x71E094F3
     FIELDS = [
-        TLField("count", "int"),
+        TLField("count", "int", skip_cid=True),
         TLField("dialogs", "Dialog", is_vector=True),
         TLField("messages", "Message", is_vector=True),
         TLField("chats", "Chat", is_vector=True),
         TLField("users", "User", is_vector=True),
     ]
 
+    count: Optional[int]
+    dialogs: Optional[List[TLObject]]
+    messages: Optional[List[TLObject]]
+    chats: Optional[List[TLObject]]
+    users: Optional[List[TLObject]]
+
 
 class MessagesDialogsNotModified(TLObject):
     CONSTRUCTOR_ID = 0xF0E3E596
     FIELDS = [TLField("count", "int")]
+    count: Optional[int]
 
 
 class MessagesAffectedMessages(TLObject):
     CONSTRUCTOR_ID = 0x84D19185
     FIELDS = [TLField("pts", "int"), TLField("pts_count", "int")]
+    pts: Optional[int]
+    pts_count: Optional[int]

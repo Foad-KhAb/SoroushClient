@@ -17,6 +17,10 @@ class Found(TLObject):
         TLField("chats", "Chat", is_vector=True),
         TLField("users", "User", is_vector=True),
     ]
+    my_result: Optional[Peer]
+    results: Optional[Peer]
+    chats: Optional[Chat]
+    users: Optional[User]
 
 
 class ResolvedPeer(TLObject):

@@ -1,3 +1,5 @@
+from typing import Optional
+
 from soroushclient.tl.base import TLField, TLObject
 
 
@@ -12,6 +14,11 @@ class GeoPoint(TLObject):
         TLField("flags", "int", flag_group=0, flag_indicator=True),
         TLField("long", "double"),
         TLField("lat", "double"),
-        TLField("access_hash", "long"),
-        TLField("accuracy_radius", "int", flag_group=0, flag_bit=0),
+        TLField("access_hash", "long", skip_cid=True),
+        TLField("accuracy_radius", "int", flag_group=0, flag_bit=0, skip_cid=True),
     ]
+
+    long: Optional[float]
+    lat: Optional[float]
+    access_hash: Optional[int]
+    accuracy_radius: Optional[int]

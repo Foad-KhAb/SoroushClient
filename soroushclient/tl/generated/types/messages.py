@@ -16,6 +16,8 @@ class DraftMessageEmpty(TLObject):
         TLField("date", "int", flag_group=0, flag_bit=0),
     ]
 
+    date: Optional[int]
+
 
 class DraftMessage(TLObject):
     CONSTRUCTOR_ID = 0xFD8E711F
@@ -28,6 +30,13 @@ class DraftMessage(TLObject):
         TLField("media", "InputMedia", flag_group=0, flag_bit=6),
         TLField("date", "int"),
     ]
+
+    no_webpage: Optional[bool]
+    reply_to: Optional[TLObject]
+    message: Optional[str]
+    entities: Optional[List[TLObject]]
+    media: Optional[TLObject]
+    date: Optional[int]
 
 
 class MessageMediaEmpty(TLObject):
@@ -44,6 +53,10 @@ class MessageMediaPhoto(TLObject):
         TLField("ttl_seconds", "int", flag_group=0, flag_bit=2),
     ]
 
+    spoiler: Optional[bool]
+    photo: Optional[TLObject]
+    ttl_seconds: Optional[int]
+
 
 class MessageMediaDocument(TLObject):
     CONSTRUCTOR_ID = 0x4CF4D72D
@@ -55,6 +68,12 @@ class MessageMediaDocument(TLObject):
         TLField("alt_document", "Document", flag_group=0, flag_bit=5),
         TLField("ttl_seconds", "int", flag_group=0, flag_bit=2),
     ]
+
+    nopremium: Optional[bool]
+    spoiler: Optional[bool]
+    document: Optional[TLObject]
+    alt_document: Optional[TLObject]
+    ttl_seconds: Optional[int]
 
 
 class MessageMediaWebPage(TLObject):
@@ -68,6 +87,12 @@ class MessageMediaWebPage(TLObject):
         TLField("webpage", "WebPage"),
     ]
 
+    force_large_media: Optional[bool]
+    force_small_media: Optional[bool]
+    manual: Optional[bool]
+    safe: Optional[bool]
+    webpage: Optional[TLObject]
+
 
 class MessageMediaContact(TLObject):
     CONSTRUCTOR_ID = 0x70322949
@@ -79,6 +104,12 @@ class MessageMediaContact(TLObject):
         TLField("user_id", "long"),
     ]
 
+    phone_number: Optional[str]
+    first_name: Optional[str]
+    last_name: Optional[str]
+    vcard: Optional[str]
+    user_id: Optional[int]
+
 
 class MessageMediaUnsupported(TLObject):
     CONSTRUCTOR_ID = 0x9F84F49E
@@ -88,6 +119,8 @@ class MessageMediaUnsupported(TLObject):
 class MessageMediaGeo(TLObject):
     CONSTRUCTOR_ID = 0x56E0D474
     FIELDS = [TLField("geo", "GeoPoint")]
+
+    geo: Optional[TLObject]
 
 
 class MessageFwdHeader(TLObject):
@@ -104,6 +137,16 @@ class MessageFwdHeader(TLObject):
         TLField("saved_from_msg_id", "int", flag_group=0, flag_bit=4),
         TLField("psa_type", "string", flag_group=0, flag_bit=11),
     ]
+
+    imported: Optional[bool]
+    from_id: Optional[TLObject]
+    from_name: Optional[str]
+    date: Optional[int]
+    channel_post: Optional[int]
+    post_author: Optional[str]
+    saved_from_peer: Optional[TLObject]
+    saved_from_msg_id: Optional[int]
+    psa_type: Optional[str]
 
 
 class MessageReplyHeader(TLObject):
@@ -125,50 +168,80 @@ class MessageReplyHeader(TLObject):
         TLField("quote_offset", "int", flag_group=0, flag_bit=10),
     ]
 
+    reply_to_scheduled: Optional[bool]
+    forum_topic: Optional[bool]
+    quote: Optional[bool]
+    reply_to_msg_id: Optional[int]
+    reply_to_peer_id: Optional[TLObject]
+    reply_from: Optional[TLObject]
+    reply_media: Optional[TLObject]
+    reply_to_top_id: Optional[int]
+    quote_text: Optional[str]
+    quote_entities: Optional[List[TLObject]]
+    quote_offset: Optional[int]
+
 
 class MessageEntityUnknown(TLObject):
     CONSTRUCTOR_ID = 0xBB92BA95
     FIELDS = [TLField("offset", "int"), TLField("length", "int")]
+    offset: Optional[int]
+    length: Optional[int]
 
 
 class MessageEntityMention(TLObject):
     CONSTRUCTOR_ID = 0xFA04579D
     FIELDS = [TLField("offset", "int"), TLField("length", "int")]
+    offset: Optional[int]
+    length: Optional[int]
 
 
 class MessageEntityHashtag(TLObject):
     CONSTRUCTOR_ID = 0x6F635B0D
     FIELDS = [TLField("offset", "int"), TLField("length", "int")]
+    offset: Optional[int]
+    length: Optional[int]
 
 
 class MessageEntityBotCommand(TLObject):
     CONSTRUCTOR_ID = 0x6CEF8AC7
     FIELDS = [TLField("offset", "int"), TLField("length", "int")]
+    offset: Optional[int]
+    length: Optional[int]
 
 
 class MessageEntityUrl(TLObject):
     CONSTRUCTOR_ID = 0x6ED02538
     FIELDS = [TLField("offset", "int"), TLField("length", "int")]
+    offset: Optional[int]
+    length: Optional[int]
 
 
 class MessageEntityEmail(TLObject):
     CONSTRUCTOR_ID = 0x64E475C2
     FIELDS = [TLField("offset", "int"), TLField("length", "int")]
+    offset: Optional[int]
+    length: Optional[int]
 
 
 class MessageEntityBold(TLObject):
     CONSTRUCTOR_ID = 0xBD610BC9
     FIELDS = [TLField("offset", "int"), TLField("length", "int")]
+    offset: Optional[int]
+    length: Optional[int]
 
 
 class MessageEntityItalic(TLObject):
     CONSTRUCTOR_ID = 0x826F8B60
     FIELDS = [TLField("offset", "int"), TLField("length", "int")]
+    offset: Optional[int]
+    length: Optional[int]
 
 
 class MessageEntityCode(TLObject):
     CONSTRUCTOR_ID = 0x28A20571
     FIELDS = [TLField("offset", "int"), TLField("length", "int")]
+    offset: Optional[int]
+    length: Optional[int]
 
 
 class MessageEntityPre(TLObject):
@@ -179,6 +252,10 @@ class MessageEntityPre(TLObject):
         TLField("language", "string"),
     ]
 
+    offset: Optional[int]
+    length: Optional[int]
+    language: Optional[str]
+
 
 class MessageEntityTextUrl(TLObject):
     CONSTRUCTOR_ID = 0x76A6D327
@@ -187,6 +264,10 @@ class MessageEntityTextUrl(TLObject):
         TLField("length", "int"),
         TLField("url", "string"),
     ]
+
+    offset: Optional[int]
+    length: Optional[int]
+    language: Optional[str]
 
 
 class MessageEntityMentionName(TLObject):
@@ -197,35 +278,51 @@ class MessageEntityMentionName(TLObject):
         TLField("user_id", "long"),
     ]
 
+    offset: Optional[int]
+    length: Optional[int]
+    language: Optional[str]
+
 
 class MessageEntityPhone(TLObject):
     CONSTRUCTOR_ID = 0x9B69E34B
     FIELDS = [TLField("offset", "int"), TLField("length", "int")]
+    offset: Optional[int]
+    length: Optional[int]
 
 
 class MessageEntityCashtag(TLObject):
     CONSTRUCTOR_ID = 0x4C4E743F
     FIELDS = [TLField("offset", "int"), TLField("length", "int")]
+    offset: Optional[int]
+    length: Optional[int]
 
 
 class MessageEntityUnderline(TLObject):
     CONSTRUCTOR_ID = 0x9C4E7E8B
     FIELDS = [TLField("offset", "int"), TLField("length", "int")]
+    offset: Optional[int]
+    length: Optional[int]
 
 
 class MessageEntityStrike(TLObject):
     CONSTRUCTOR_ID = 0xBF0693D4
     FIELDS = [TLField("offset", "int"), TLField("length", "int")]
+    offset: Optional[int]
+    length: Optional[int]
 
 
 class MessageEntitySpoiler(TLObject):
     CONSTRUCTOR_ID = 0x32CA960F
     FIELDS = [TLField("offset", "int"), TLField("length", "int")]
+    offset: Optional[int]
+    length: Optional[int]
 
 
 class MessageEntityBlockquote(TLObject):
     CONSTRUCTOR_ID = 0xF1CCAAAC
     FIELDS = [TLField("offset", "int"), TLField("length", "int")]
+    offset: Optional[int]
+    length: Optional[int]
 
 
 class MessageEntityCustomEmoji(TLObject):
@@ -235,6 +332,9 @@ class MessageEntityCustomEmoji(TLObject):
         TLField("length", "int"),
         TLField("document_id", "long"),
     ]
+    offset: Optional[int]
+    length: Optional[int]
+    document_id: Optional[int]
 
 
 class MessageReplies(TLObject):
@@ -250,6 +350,14 @@ class MessageReplies(TLObject):
         TLField("read_max_id", "int", flag_group=0, flag_bit=3),
     ]
 
+    comments: Optional[bool]
+    replies: Optional[int]
+    replies_pts: Optional[int]
+    recent_repliers: Optional[List[TLObject]]
+    channel_id: Optional[int]
+    max_id: Optional[int]
+    read_max_id: Optional[int]
+
 
 class ReactionEmpty(TLObject):
     CONSTRUCTOR_ID = 0x79F5D419
@@ -259,11 +367,13 @@ class ReactionEmpty(TLObject):
 class ReactionEmoji(TLObject):
     CONSTRUCTOR_ID = 0x1B2286BE
     FIELDS = [TLField("emoticon", "string")]
+    emoticon: Optional[str]
 
 
 class ReactionCustomEmoji(TLObject):
     CONSTRUCTOR_ID = 0x8935FC73
     FIELDS = [TLField("document_id", "long")]
+    document_id: Optional[int]
 
 
 class ReactionCount(TLObject):
@@ -274,6 +384,10 @@ class ReactionCount(TLObject):
         TLField("reaction", "Reaction"),
         TLField("count", "int"),
     ]
+
+    chosen_order: Optional[int]
+    reaction: Optional[TLObject]
+    count: Optional[int]
 
 
 class MessageReactions(TLObject):
@@ -293,6 +407,12 @@ class MessageReactions(TLObject):
         ),
     ]
 
+    min: Optional[bool]
+    can_see_list: Optional[bool]
+    reactions_as_tags: Optional[bool]
+    results: Optional[List[TLObject]]
+    recent_reactions: Optional[List[TLObject]]
+
 
 class MessageEmpty(TLObject):
     CONSTRUCTOR_ID = 0x90A6CA84
@@ -301,6 +421,9 @@ class MessageEmpty(TLObject):
         TLField("id", "int"),
         TLField("peer_id", "Peer", flag_group=0, flag_bit=0),
     ]
+
+    id: Optional[int]
+    peer_id: Optional[Peer]
 
 
 class Message(BaseMessage):
@@ -346,6 +469,38 @@ class Message(BaseMessage):
         TLField("ttl_period", "int", flag_group=0, flag_bit=25),
     ]
 
+    out: Optional[bool]
+    mentioned: Optional[bool]
+    media_unread: Optional[bool]
+    silent: Optional[bool]
+    post: Optional[bool]
+    from_scheduled: Optional[bool]
+    legacy: Optional[bool]
+    edit_hide: Optional[bool]
+    pinned: Optional[bool]
+    noforwards: Optional[bool]
+    invert_media: Optional[bool]
+    id: Optional[int]
+    from_id: Optional[TLObject]
+    peer_id: Optional[TLObject]
+    fwd_from: Optional[TLObject]
+    via_bot_id: Optional[int]
+    reply_to: Optional[TLObject]
+    date: Optional[int]
+    message: Optional[str]
+    media: Optional[TLObject]
+    reply_markup: Optional[TLObject]
+    entities: Optional[List[TLObject]]
+    views: Optional[int]
+    forwards: Optional[int]
+    replies: Optional[TLObject]
+    edit_date: Optional[int]
+    post_author: Optional[str]
+    grouped_id: Optional[int]
+    reactions: Optional[TLObject]
+    restriction_reason: Optional[List[TLObject]]
+    ttl_period: Optional[int]
+
 
 class MessageService(TLObject):
     CONSTRUCTOR_ID = 0x2B085862
@@ -365,6 +520,19 @@ class MessageService(TLObject):
         TLField("ttl_period", "int", flag_group=0, flag_bit=25),
     ]
 
+    out: Optional[bool]
+    mentioned: Optional[bool]
+    silent: Optional[bool]
+    post: Optional[bool]
+    legacy: Optional[bool]
+    id: Optional[int]
+    from_id: Optional[TLObject]
+    peer_id: Optional[TLObject]
+    reply_to: Optional[TLObject]
+    date: Optional[int]
+    action: Optional[TLObject]
+    ttl_period: Optional[int]
+
 
 class MessageActionEmpty(TLObject):
     CONSTRUCTOR_ID = 0xB6AEF7B0
@@ -375,25 +543,33 @@ class MessageActionChatCreate(TLObject):
     CONSTRUCTOR_ID = 0xBD47CBAD
     FIELDS = [TLField("title", "string"), TLField("users", "long", is_vector=True)]
 
+    title: Optional[str]
+    users: Optional[List[int]]
+
 
 class MessageActionChatEditTitle(TLObject):
     CONSTRUCTOR_ID = 0xB5A1CE5A
     FIELDS = [TLField("title", "string")]
 
+    title: Optional[str]
+
 
 class MessageActionChatAddUser(TLObject):
     CONSTRUCTOR_ID = 0x15CEFD00
     FIELDS = [TLField("users", "long", is_vector=True)]
+    users: Optional[List[int]]
 
 
 class MessageActionChatDeleteUser(TLObject):
     CONSTRUCTOR_ID = 0xA43F30CC
     FIELDS = [TLField("user_id", "long")]
+    users: Optional[List[int]]
 
 
 class MessageActionChannelCreate(TLObject):
     CONSTRUCTOR_ID = 0x95D2AC92
     FIELDS = [TLField("title", "string")]
+    title: Optional[str]
 
 
 class MessageActionPinMessage(TLObject):
@@ -414,21 +590,27 @@ class MessageActionContactSignUp(TLObject):
 class MessageActionChatJoinedByLink(TLObject):
     CONSTRUCTOR_ID = 0x031224C3
     FIELDS = [TLField("inviter_id", "long")]
+    inviter_id: Optional[int]
 
 
 class MessageActionChatMigrateTo(TLObject):
     CONSTRUCTOR_ID = 0xE1037F92
     FIELDS = [TLField("channel_id", "long")]
+    channel_id: Optional[int]
 
 
 class MessageActionChannelMigrateFrom(TLObject):
     CONSTRUCTOR_ID = 0xEA3948E9
     FIELDS = [TLField("title", "string"), TLField("chat_id", "long")]
 
+    title: Optional[str]
+    chat_id: Optional[int]
+
 
 class MessageActionCustomAction(TLObject):
     CONSTRUCTOR_ID = 0xFAE69F56
     FIELDS = [TLField("message", "string")]
+    message: Optional[str]
 
 
 class MessageActionSetMessagesTTL(TLObject):
@@ -439,6 +621,9 @@ class MessageActionSetMessagesTTL(TLObject):
         TLField("auto_setting_from", "long", flag_group=0, flag_bit=0),
     ]
 
+    period: Optional[int]
+    auto_setting_from: Optional[int]
+
 
 class MessageActionTopicCreate(TLObject):
     CONSTRUCTOR_ID = 0x0D999256
@@ -448,6 +633,10 @@ class MessageActionTopicCreate(TLObject):
         TLField("icon_color", "int"),
         TLField("icon_emoji_id", "long", flag_group=0, flag_bit=0),
     ]
+
+    title: Optional[str]
+    icon_color: Optional[int]
+    icon_emoji_id: Optional[int]
 
 
 class MessageActionContactReturned(TLObject):

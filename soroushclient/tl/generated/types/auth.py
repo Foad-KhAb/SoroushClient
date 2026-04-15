@@ -1,4 +1,11 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Optional
+
 from soroushclient.tl.base import TLField, TLObject
+
+if TYPE_CHECKING:
+    from soroushclient.tl.generated import User
 
 
 class CodeSettings(TLObject):
@@ -14,26 +21,38 @@ class CodeSettings(TLObject):
         TLField("token", "string", flag_group=0, flag_bit=8),
         TLField("app_sandbox", "bool", flag_group=0, flag_bit=8),
     ]
+    allow_flashcall: Optional[bool]
+    current_number: Optional[bool]
+    allow_app_hash: Optional[bool]
+    allow_missed_call: Optional[bool]
+    logout_tokens: Optional[bytes]
+    allow_firebase: Optional[bool]
+    token: Optional[bytes]
+    app_sandbox: Optional[bool]
 
 
 class SentCodeTypeApp(TLObject):
     CONSTRUCTOR_ID = 0x3DBB5986
     FIELDS = [TLField("length", "int")]
+    length: int
 
 
 class SentCodeTypeSms(TLObject):
     CONSTRUCTOR_ID = 0xC000BBA2
     FIELDS = [TLField("length", "int")]
+    length: int
 
 
 class SentCodeTypeCall(TLObject):
     CONSTRUCTOR_ID = 0x5353E5A7
     FIELDS = [TLField("length", "int")]
+    length: int
 
 
 class SentCodeTypeFlashCall(TLObject):
     CONSTRUCTOR_ID = 0xAB03C6D9
     FIELDS = [TLField("pattern", "string")]
+    pattern: str
 
 
 class SentCode(TLObject):
@@ -45,6 +64,10 @@ class SentCode(TLObject):
         TLField("next_type", "int", flag_group=0, flag_bit=1),
         TLField("timeout", "int", flag_group=0, flag_bit=2),
     ]
+    type: Optional[int]
+    phone_code_hash: Optional[bytes]
+    next_type: Optional[int]
+    timeout: Optional[int]
 
 
 class Authorization(TLObject):
@@ -57,6 +80,11 @@ class Authorization(TLObject):
         TLField("future_auth_token", "bytes", flag_group=0, flag_bit=2),
         TLField("user", "User"),
     ]
+    setup_password_required: Optional[bool]
+    otherwise_relogin_days: Optional[int]
+    tmp_sessions: Optional[int]
+    future_auth_token: Optional[bytes]
+    user: Optional[User]
 
 
 class AuthorizationSignUpRequired(TLObject):
