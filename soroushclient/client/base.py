@@ -1,11 +1,8 @@
-import asyncio
-import json
 import logging
-import os
-from typing import Callable, List
+import random
 
-import websockets
 from soroushclient.client.auth_cli import PhoneLoginCLI
+from soroushclient.errors.base import RpcError
 from soroushclient.network.constants import (
     ID_BAD_SERVER_SALT,
     ID_MSG_CONTAINER,
@@ -40,46 +37,99 @@ from soroushclient.tl.reader import TLReader
 from soroushclient.tl.writer import TLWriter
 
 logger = logging.getLogger(__name__)
+import asyncio
+import json
+import os
+from contextlib import asynccontextmanager, suppress
+from typing import Callable, Dict, List, Optional, cast
+
+import websockets
+
+# ── MTProto constructor IDs ────────────────────────────────────────────────────
+ID_PONG = 0x347773C5
+ID_UPDATES = 0x74AE4240
+
+
+@asynccontextmanager
+async def default_lifespan(client: "SoroushClient"):
+    """No-op lifespan. Override to run startup/teardown logic."""
+    yield
 
 
 class SoroushClient:
-    def __init__(self, api_id: int, api_hash: str, session_file="soroush.json"):
+    """
+    MTProto client for Soroush Plus.
+
+    Usage (manual flow):
+        s = SoroushClient(api_id=..., api_hash=...)
+        await s.send_code("989xxxxxxxxx")
+        await s.sign_in(input("Code: "))
+        dialogs = await s.get_dialogs()
+
+    Usage (long-running bot):
+        s = SoroushClient(api_id=..., api_hash=...)
+
+        @s.on_update
+        async def handler(update):
+            print(update)
+
+        s.run()   # blocks, auto-reconnects forever
+    """
+
+    def __init__(
+        self,
+        api_id: int = int(os.environ.get("API_ID", 0)),
+        api_hash: str = "",
+        session_file: str = "soroush.json",
+        lifespan=None,
+        reconnect_delay: float = 5.0,
+    ):
         self.api_id = api_id
         self.api_hash = api_hash
         self.session_file = session_file
-        self._transport = ObfuscatedTransport()
-        self._session = MTProtoSession(self._transport)
-        self._phone = None
-        self._phone_code_hash = None
-        self._pending: dict = {}
-        self._recv_task = None
-        self._initialized = False
+        self._reconnect_delay = reconnect_delay
+        self._lifespan = lifespan or default_lifespan
+
+        # Created fresh on every (re)connect
+        self._transport: Optional[ObfuscatedTransport] = None
+        self._session: Optional[MTProtoSession] = None
+
+        # Auth state
+        self._phone: Optional[str] = None
+        self._phone_code_hash: Optional[str] = None
+
+        # RPC: msg_id → Future
+        self._pending: Dict[int, asyncio.Future] = {}
+
+        # Update handlers
         self._update_handlers: List[Callable] = []
 
-    async def connect(self):
-        await self._transport.connect()
-        is_new = not self._load_session()
-        if is_new:
-            await self._session.create_auth_key()
-            self._save_session()
-        logger.info(f"[client] auth_key_id={self._session.auth_key_id}")
+        # Task registry — every background task lives here
+        self._tasks: set = set()
 
-        self._recv_task = asyncio.ensure_future(self._recv_loop())
-        logger.info("[client] Connected.")
-        if not is_new:
-            await self._ping()
+        # Lifecycle flags
+        self._stopped = False
+        self._initialized = False  # tracks initConnection wrapping
 
-    async def disconnect(self):
-        if self._recv_task:
-            self._recv_task.cancel()
-        await self._transport.disconnect()
+    # ── Context manager ────────────────────────────────────────────────────────
 
     async def __aenter__(self):
-        await self.connect()
+        """Connect once, return self. Does NOT start the reconnect loop."""
+        await self._do_connect()
         return self
 
     async def __aexit__(self, *_):
-        await self.disconnect()
+        await self.stop()
+
+    # ── Task helpers ───────────────────────────────────────────────────────────
+
+    def _create_task(self, coro) -> asyncio.Task:
+        task = asyncio.create_task(coro)
+        self._tasks.add(task)
+        task.add_done_callback(self._tasks.discard)
+        return task
+
+    # ── Session persistence ────────────────────────────────────────────────────
 
     def _save_session(self):
         with open(self.session_file, "w") as f:
@@ -105,56 +155,121 @@ class SoroushClient:
         logger.info("[client] Session loaded from disk.")
         return True
 
+    # ── Low-level connect / disconnect ─────────────────────────────────────────
+
+    async def _do_connect(self):
+        self._transport = ObfuscatedTransport()
+        self._session = MTProtoSession(self._transport)
+        self._initialized = False
+
+        await self._transport.connect()
+
+        is_new = not self._load_session()
+        if is_new:
+            await self._session.create_auth_key()
+            self._save_session()
+
+        logger.info(f"[client] Connected. auth_key_id={self._session.auth_key_id}")
+
+        # ← THIS IS THE FIX: start reading immediately after connecting
+        self._create_task(self._recv_loop())
+
+        if not is_new:
+            await self._ping()
+
+    async def _do_disconnect(self):
+        if self._transport:
+            with suppress(Exception):
+                await self._transport.disconnect()
+        self._transport = None
+        self._session = None
+
+    # ── Receive loop ───────────────────────────────────────────────────────────
+
     async def _recv_loop(self):
         while True:
             try:
                 cid, r = await self._session.recv()
                 self._dispatch(cid, r)
             except asyncio.CancelledError:
-                break
+                raise
             except websockets.exceptions.ConnectionClosed as e:
                 logger.info(f"[recv_loop] WebSocket closed: {e}")
-                break
+                return  # triggers reconnect
             except Exception as e:
-                logger.info(f"[recv_loop] error: {e}")
+                logger.warning(f"[recv_loop] error: {e}")
+                return  # triggers reconnect
 
-    def on_update(self, func: Callable = None):
-        """
-        Decorator to register a handler for all incoming updates.
+    # ── Main lifecycle ─────────────────────────────────────────────────────────
+    async def start(self, run_in_background: bool = False):
+        self._stopped = False
 
-        Usage:
-            @client.on_update
-            async def handler(update):
-                print(update)
-        """
-        if func is not None:
-            self._update_handlers.append(func)
-            return func
+        async with self._lifespan(self):
+            while not self._stopped:
+                try:
+                    logger.info("[client] Connecting…")
+                    await self._do_connect()  # recv_loop starts inside here now
 
-        def decorator(f):
-            self._update_handlers.append(f)
-            return f
+                    if run_in_background:
+                        return
 
-        return decorator
+                    # wait until recv_loop task finishes (socket closed)
+                    recv_tasks = [t for t in self._tasks]
+                    if recv_tasks:
+                        try:
+                            await asyncio.gather(*recv_tasks)
+                        except asyncio.CancelledError:
+                            break
 
-    def add_update_handler(self, func: Callable):
-        """Register an update handler function."""
-        self._update_handlers.append(func)
+                except asyncio.CancelledError:
+                    break
+                except Exception as e:
+                    logger.error(f"[client] Connection error: {e}")
+                finally:
+                    await self._do_disconnect()
 
-    def remove_update_handler(self, func: Callable):
-        """Remove a previously registered update handler."""
-        self._update_handlers.remove(func)
+                if not self._stopped:
+                    logger.info(f"[client] Reconnecting in {self._reconnect_delay}s…")
+                    await asyncio.sleep(self._reconnect_delay)
 
-    async def _fire_update(self, update: TLObject):
-        """Dispatch an update to all registered handlers."""
-        for handler in self._update_handlers:
+    async def stop(self):
+        """Cancel all tracked tasks and close the transport cleanly."""
+        if self._stopped:
+            return
+        self._stopped = True
+        logger.info("[client] Stopping…")
+
+        for task in list(self._tasks):
+            task.cancel()
+        for task in list(self._tasks):
+            with suppress(asyncio.CancelledError):
+                await task
+
+        await self._do_disconnect()
+        logger.info("[client] Stopped cleanly.")
+
+    def run(self):
+        """Synchronous entry-point. Blocks until Ctrl-C or stop()."""
+
+        async def _run():
             try:
-                if asyncio.iscoroutinefunction(handler):
-                    await handler(update)
-                else:
-                    handler(update)
-            except Exception as e:
-                logger.error(f"[update] handler error: {e}")
+                await self.start()
+            except KeyboardInterrupt:
+                pass
+            finally:
+                await self.stop()
+
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+
+        if loop and loop.is_running():
+            return _run()
+        else:
+            asyncio.run(_run())
+
+    # ── Dispatch ───────────────────────────────────────────────────────────────
 
     def _dispatch(self, cid: int, r: TLReader):
         if cid == ID_RPC_RESULT:
@@ -193,15 +308,15 @@ class SoroushClient:
         elif cid == ID_MSGS_ACK:
             pass
 
-        elif cid == 0x347773C5:  # Pong
+        elif cid == ID_PONG:
             r.read_long()
             r.read_long()
-            logger.debug("pong received")
+            logger.debug("[mtproto] pong received")
 
-        elif cid == 0x74AE4240:  # Updates
+        elif cid == ID_UPDATES:
             obj = TLObject.read_object_with_cid(cid, r)
             if obj and self._update_handlers:
-                asyncio.ensure_future(self._fire_update(obj))
+                self._create_task(self._fire_update(obj))
 
         else:
             cls = TLObject._registry.get(cid)
@@ -209,15 +324,66 @@ class SoroushClient:
                 try:
                     obj = cls.from_reader(r)
                     if self._update_handlers:
-                        asyncio.ensure_future(self._fire_update(obj))
+                        self._create_task(self._fire_update(obj))
                 except Exception as e:
                     logger.warning(f"[dispatch] failed to parse cid={cid:#010x}: {e}")
             else:
                 logger.warning(f"[dispatch] unhandled cid={cid:#010x}")
 
-    async def _ping(self):
-        import random
+    # ── Update handlers ────────────────────────────────────────────────────────
 
+    def on_update(self, func: Callable = None):
+        """
+        Decorator — register a handler for all incoming updates.
+
+            @client.on_update
+            async def handler(update):
+                print(update)
+        """
+        if func is not None:
+            self._update_handlers.append(func)
+            return func
+
+        def decorator(f):
+            self._update_handlers.append(f)
+            return f
+
+        return decorator
+
+    def add_update_handler(self, func: Callable):
+        self._update_handlers.append(func)
+
+    def remove_update_handler(self, func: Callable):
+        self._update_handlers.remove(func)
+
+    async def _fire_update(self, update: TLObject):
+        for handler in self._update_handlers:
+            try:
+                if asyncio.iscoroutinefunction(handler):
+                    await handler(update)
+                else:
+                    handler(update)
+            except Exception as e:
+                logger.error(f"[update] handler error: {e}")
+
+    # ── Low-level RPC ──────────────────────────────────────────────────────────
+
+    async def _call(self, body: bytes, timeout: float = 10.0):
+        loop = asyncio.get_event_loop()
+        fut = loop.create_future()
+        msg_id = await self._session.send(self._maybe_wrap(body))
+        self._pending[msg_id] = fut
+        cid, r = await asyncio.wait_for(fut, timeout=timeout)
+
+        obj = TLObject.read_object_with_cid(cid, r)
+
+        # raise RPC errors instead of returning them silently
+        if isinstance(obj, RpcError):
+            raise Exception(RpcError.error_message, RpcError)
+
+        return obj
+
+    async def _ping(self):
         w = TLWriter()
         w.write_int(0x7ABE77EC, signed=False)
         w.write_long(random.randint(0, 2**63))
@@ -226,30 +392,25 @@ class SoroushClient:
             await asyncio.sleep(0.5)
             logger.info("[client] Ping sent.")
         except Exception as e:
-            logger.info(f"[client] Ping error: {e}")
+            logger.warning(f"[client] Ping error: {e}")
 
-    async def _call(self, body: bytes, timeout=10.0):
-        loop = asyncio.get_event_loop()
-        fut = loop.create_future()
-        msg_id = await self._session.send(body)
-        self._pending[msg_id] = fut
-        return await asyncio.wait_for(fut, timeout=timeout)
+    # ── initConnection wrapper (first call only per socket) ────────────────────
 
     def _wrap_init(self, query: bytes) -> bytes:
         init = TLWriter()
-        init.write_int(0xC1CD5EA9, signed=False)  # initConnection CID
+        init.write_int(0xC1CD5EA9, signed=False)  # initConnection
         init.write_int(0, signed=False)  # flags
-        init.write_int(self.api_id)  # api_id
-        init.write_string("Web")  # device_model
-        init.write_string("1.0")  # system_version
-        init.write_string("1.0")  # app_version
-        init.write_string("fa")  # lang_code       ← first
-        init.write_string("")  # lang_pack       ← second
-        init.write_string("fa")  # system_lang_code ← third
+        init.write_int(self.api_id)
+        init.write_string("Web")
+        init.write_string("1.0")
+        init.write_string("1.0")
+        init.write_string("fa")
+        init.write_string("")
+        init.write_string("fa")
         init.write_raw(query)
 
         w = TLWriter()
-        w.write_int(0xDA9B0D0D, signed=False)
+        w.write_int(0xDA9B0D0D, signed=False)  # invokeWithLayer
         w.write_int(181)
         w.write_raw(init.getvalue())
         return w.getvalue()
@@ -266,26 +427,40 @@ class SoroushClient:
         ).start()
 
     async def send_code(self, phone: str) -> SentCode:
+        """
+        Request an OTP code for `phone`.
+        Automatically connects if not already connected.
+
+        Returns the phone_code_hash needed by sign_in().
+        """
+        if self._session is None:
+            await self._do_connect()
         req = SendCodeRequest(
             phone_number=phone,
             api_id=self.api_id,
             api_hash=self.api_hash,
             settings=CodeSettings(),
         )
-        cid, r = await self._call(self._wrap_init(req.to_bytes()))
-        result = req.parse_response(cid, r)
+        result = cast(SentCode, await self._call(req.to_bytes()))
         self._phone = phone
         self._phone_code_hash = result.phone_code_hash
         return result
 
     async def sign_in(self, code: str) -> TLObject:
+        """
+        Verify the OTP code received after send_code().
+        Must call send_code() first.
+        """
+        if not self._phone or not self._phone_code_hash:
+            raise RuntimeError("Call send_code() before sign_in().")
+
         req = SignInRequest(
             phone_number=self._phone,
             phone_code_hash=self._phone_code_hash,
             phone_code=code,
         )
-        cid, r = await self._call(req.to_bytes())
-        return req.parse_response(cid, r)
+        result = await self._call(req.to_bytes())
+        return result
 
     async def get_dialogs(
         self, offset_date=0, offset_id=0, offset_peer=InputPeerEmpty(), limit=20, hash=0
@@ -297,28 +472,28 @@ class SoroushClient:
             limit=limit,
             hash=hash,
         )
-        cid, r = await self._call(self._maybe_wrap(req.to_bytes()))
-        return req.parse_response(cid, r)
+        result = await self._call(self._maybe_wrap(req.to_bytes()))
+        return result
 
     async def get_full_channel(self, channel: InputChannel) -> TLObject:
         req = GetFullChannelRequest(channel=channel)
-        cid, r = await self._call(self._wrap_init(req.to_bytes()))
-        return req.parse_response(cid, r)
+        result = await self._call(self._wrap_init(req.to_bytes()))
+        return result
 
     async def get_full_chat(self, chat_id: str) -> TLObject:
         req = GetFullChatRequest(chat_id=chat_id)
-        cid, r = await self._call(self._wrap_init(req.to_bytes()))
-        return req.parse_response(cid, r)
+        result = await self._call(self._wrap_init(req.to_bytes()))
+        return result
 
     async def join_channel(self, channel: InputChannel) -> TLObject:
         req = JoinChannelRequest(channel=channel)
-        cid, r = await self._call(self._wrap_init(req.to_bytes()))
-        return req.parse_response(cid, r)
+        result = await self._call(self._wrap_init(req.to_bytes()))
+        return result
 
     async def leave_channel(self, channel: InputChannel) -> TLObject:
         req = LeaveChannelRequest(channel=channel)
-        cid, r = await self._call(self._wrap_init(req.to_bytes()))
-        return req.parse_response(cid, r)
+        result = await self._call(self._wrap_init(req.to_bytes()))
+        return result
 
     async def search(self, query: str, limit: int = 20) -> TLObject:
         """
@@ -366,8 +541,8 @@ class SoroushClient:
         from soroushclient.tl.generated.functions.contacts import SearchRequest
 
         req = SearchRequest(q=query, limit=limit)
-        cid, r = await self._call(self._wrap_init(req.to_bytes()))
-        return req.parse_response(cid, r)
+        result = await self._call(self._wrap_init(req.to_bytes()))
+        return result
 
     async def resolve_username(self, username: str) -> ResolvedPeer:
         """
@@ -402,8 +577,8 @@ class SoroushClient:
             user = next(u for u in result.users if u.id == peer.user_id)
         """
         req = ResolveUsername(username=username)
-        cid, r = await self._call(self._wrap_init(req.to_bytes()))
-        return req.parse_response(cid, r)
+        result = await self._call(self._wrap_init(req.to_bytes()))
+        return result
 
     async def get_history(
         self,
@@ -476,8 +651,8 @@ class SoroushClient:
             hash=hash,
         )
 
-        cid, r = await self._call(self._maybe_wrap(req.to_bytes()))
-        return req.parse_response(cid, r)
+        result = await self._call(self._maybe_wrap(req.to_bytes()))
+        return result
 
     async def join_by_link(self, link: str) -> TLObject:
         """
@@ -509,8 +684,8 @@ class SoroushClient:
             hash_ = hash_.rstrip("/").split("/")[-1]
 
         req = ImportChatInvite(hash=hash_)
-        cid, r = await self._call(self._maybe_wrap(req.to_bytes()))
-        return req.parse_response(cid, r)
+        result = await self._call(self._maybe_wrap(req.to_bytes()))
+        return result
 
     async def get_messages_views(
         self,
@@ -546,5 +721,5 @@ class SoroushClient:
         from soroushclient.tl.generated.functions.messages import GetMessagesViews
 
         req = GetMessagesViews(peer=peer, id=ids, increment=increment)
-        cid, r = await self._call(self._maybe_wrap(req.to_bytes()))
-        return req.parse_response(cid, r)
+        result = await self._call(self._maybe_wrap(req.to_bytes()))
+        return result
