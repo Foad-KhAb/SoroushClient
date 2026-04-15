@@ -5,6 +5,7 @@ import time
 from typing import TYPE_CHECKING
 
 from colorama import Fore
+
 from soroushclient.errors.base import RpcError
 
 if TYPE_CHECKING:
