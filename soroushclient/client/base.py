@@ -5,7 +5,6 @@ import os
 from typing import Callable, List
 
 import websockets
-
 from soroushclient.client.auth_cli import PhoneLoginCLI
 from soroushclient.network.constants import (
     ID_BAD_SERVER_SALT,
