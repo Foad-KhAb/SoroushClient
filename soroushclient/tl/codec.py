@@ -1,6 +1,3 @@
-# ═══════════════════════════════════════════════════════════
-# Serializer
-# ═══════════════════════════════════════════════════════════
 import logging
 from typing import Any, Dict, Type
 
@@ -76,11 +73,6 @@ def _write_value(w: TLWriter, type_: str, val: Any, skip_cid: bool = False):
             w.write_raw(val.to_bytes())
     else:
         raise TypeError(f"Cannot serialize type={type_!r} val={val!r}")
-
-
-# ═══════════════════════════════════════════════════════════
-# Deserializer
-# ═══════════════════════════════════════════════════════════
 
 
 def _deserialize(cls: Type[TLObject], r: TLReader) -> TLObject:
