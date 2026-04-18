@@ -4,6 +4,7 @@ import random
 
 from soroushclient.client.auth_cli import PhoneLoginCLI
 from soroushclient.errors.base import RpcError
+from soroushclient.exceptions import raise_rpc_error
 from soroushclient.network.constants import (
     ID_BAD_SERVER_SALT,
     ID_MSG_CONTAINER,
@@ -397,7 +398,7 @@ class SoroushClient:
 
         # raise RPC errors instead of returning them silently
         if isinstance(obj, RpcError):
-            raise Exception(RpcError.error_message, RpcError)
+            raise_rpc_error(obj.error_code, obj.error_message)
 
         return obj
     async def _ping(self):
@@ -497,7 +498,7 @@ class SoroushClient:
         result = await self._call(self._wrap_init(req.to_bytes()))
         return result
 
-    async def get_full_chat(self, chat_id: str) -> TLObject:
+    async def get_full_chat(self, chat_id: int) -> TLObject:
         req = GetFullChatRequest(chat_id=chat_id)
         result = await self._call(self._wrap_init(req.to_bytes()))
         return result
