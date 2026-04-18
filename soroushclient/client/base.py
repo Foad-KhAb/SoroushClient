@@ -1,4 +1,5 @@
 import logging
+import pathlib
 import random
 
 from soroushclient.client.auth_cli import PhoneLoginCLI
@@ -41,7 +42,7 @@ import asyncio
 import json
 import os
 from contextlib import asynccontextmanager, suppress
-from typing import Callable, Dict, List, Optional, cast
+from typing import Callable, Dict, List, Optional, cast, Union
 
 import websockets
 
@@ -80,7 +81,7 @@ class SoroushClient:
             self,
             api_id: int = int(os.environ.get("API_ID", 0)),
             api_hash: str = "",
-            session_file: str = "soroush.json",
+            session_file: Optional[Union[str, pathlib.Path]] = "soroush.json",
             lifespan=None,
             reconnect_delay: float = 5.0,
     ):
@@ -111,6 +112,24 @@ class SoroushClient:
         self._stopped = False
         self._initialized = False  # tracks initConnection wrapping
 
+        if isinstance(session_file, (str, pathlib.Path)):
+            path = pathlib.Path(session_file)
+            if path.suffix.lower() != ".json":
+                path = path.with_suffix(".json")
+            self.__session_file = path.resolve()
+
+        elif isinstance(session_file, bytes):
+            path = pathlib.Path("soroush.json")
+            if path.suffix.lower() != ".bale":
+                path = path.with_suffix(".json")
+            path = path.resolve()
+            path.write_bytes(session_file)
+            self.__session_file = path
+
+        else:
+            raise TypeError("session_file must be str، Path or bytes")
+
+
     # ── Context manager ────────────────────────────────────────────────────────
 
     async def __aenter__(self):
@@ -132,7 +151,7 @@ class SoroushClient:
     # ── Session persistence ────────────────────────────────────────────────────
 
     def _save_session(self):
-        with open(self.session_file, "w") as f:
+        with open(self.__session_file, "w") as f:
             json.dump(
                 {
                     "auth_key": self._session.auth_key.hex(),
@@ -144,9 +163,9 @@ class SoroushClient:
             )
 
     def _load_session(self) -> bool:
-        if not os.path.exists(self.session_file):
+        if not os.path.exists(self.__session_file):
             return False
-        with open(self.session_file) as f:
+        with open(self.__session_file) as f:
             d = json.load(f)
         self._session.auth_key = bytes.fromhex(d["auth_key"])
         self._session.auth_key_id = d["auth_key_id"]
