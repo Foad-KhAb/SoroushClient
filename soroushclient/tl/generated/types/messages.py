@@ -359,21 +359,81 @@ class MessageReplies(TLObject):
     read_max_id: Optional[int]
 
 
+class ReactionsNotModified(TLObject):
+    CONSTRUCTOR_ID = 0xB06FDBDF
+    FIELDS = []
+
+
 class ReactionEmpty(TLObject):
     CONSTRUCTOR_ID = 0x79F5D419
     FIELDS = []
 
 
 class ReactionEmoji(TLObject):
-    CONSTRUCTOR_ID = 0x1B2286BE
-    FIELDS = [TLField("emoticon", "string")]
-    emoticon: Optional[str]
+    CONSTRUCTOR_ID = 0x1B2286B8
+    FIELDS = [
+        TLField("emoticon", "string"),
+    ]
 
 
 class ReactionCustomEmoji(TLObject):
     CONSTRUCTOR_ID = 0x8935FC73
-    FIELDS = [TLField("document_id", "long")]
-    document_id: Optional[int]
+    FIELDS = [
+        TLField("document_id", "long", skip_cid=True),
+    ]
+
+
+class ChatReactionsNone(TLObject):
+    CONSTRUCTOR_ID = 0xEAFC32BC  # ← was wrong before (0xEAA58185)
+    FIELDS = []
+
+
+class ChatReactionsAll(TLObject):
+    CONSTRUCTOR_ID = 0x52928BCA
+    FIELDS = [
+        TLField("flags", "", flag_indicator=True),
+        TLField("allow_custom", "true", flag_group=1, flag_bit=0, skip_cid=True),
+    ]
+
+
+class ChatReactionsSome(TLObject):
+    CONSTRUCTOR_ID = 0x661D4037
+    FIELDS = [
+        TLField("reactions", "Reaction", is_vector=True),
+    ]
+
+
+class ChatReactionsDisabled(TLObject):
+    CONSTRUCTOR_ID = 0x75C1F53B  # ← was wrong before (0x7BD15B6B)
+    FIELDS = []
+
+
+class Reactions(TLObject):
+    CONSTRUCTOR_ID = 0xEAFDF716  # ← was wrong before (0xEAA4B356)
+    FIELDS = [
+        TLField("hash", "long", skip_cid=True),
+        TLField("reactions", "Reaction", is_vector=True),
+    ]
+
+
+class EmojiStatusEmpty(TLObject):
+    CONSTRUCTOR_ID = 0x2DE11AAE
+    FIELDS = []
+
+
+class EmojiStatus(TLObject):
+    CONSTRUCTOR_ID = 0x929B619D
+    FIELDS = [
+        TLField("document_id", "long", skip_cid=True),
+    ]
+
+
+class EmojiStatusUntil(TLObject):
+    CONSTRUCTOR_ID = 0xFA30A8C7
+    FIELDS = [
+        TLField("document_id", "long", skip_cid=True),
+        TLField("until", "int", skip_cid=True),
+    ]
 
 
 class ReactionCount(TLObject):

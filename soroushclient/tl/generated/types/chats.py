@@ -26,11 +26,6 @@ class ChatPhoto(TLObject):
     ]
 
 
-class ChatReactionsNone(TLObject):
-    CONSTRUCTOR_ID = 0xEAFC32BC
-    FIELDS = []
-
-
 class ChatParticipant(TLObject):
     CONSTRUCTOR_ID = 0xC02D4007
     FIELDS = [
@@ -69,11 +64,6 @@ class ChatReactionsSome(TLObject):
     FIELDS = [
         TLField("reactions", "Reaction", is_vector=True),
     ]
-
-
-class ChatReactionsDisabled(TLObject):
-    CONSTRUCTOR_ID = 0x75C1F53B
-    FIELDS = []
 
 
 class ChatParticipantsForbidden(TLObject):

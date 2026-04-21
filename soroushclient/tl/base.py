@@ -64,11 +64,11 @@ class TLObject:
         cid = r.read_int(signed=False)
         cls = TLObject._registry.get(cid)
         if cls is None:
-            return UnknownObject(cid)
+            raise ValueError(f"Unknown constructor id={cid} at pos={r._pos}")
         try:
             return cls.from_reader(r)
         except Exception as e:
-            return UnknownObject(cid, error=str(e))
+            raise ValueError(f"Failed to parse cid={cid}: {e}") from e
 
     @staticmethod
     def read_object_with_cid(cid: int, r: TLReader) -> "TLObject":
