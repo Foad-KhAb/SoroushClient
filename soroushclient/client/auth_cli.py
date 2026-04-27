@@ -201,6 +201,6 @@ class PhoneLoginCLI:
 
     async def _on_login_success(self, res):
         self._print(
-            f"🎉 Login successful! Welcome {res.user.first_name}",
-            f"🎉 Vorood movafagh! Khosh amadid {res.user.last_name}",
+            f"🎉 Login successful! Welcome",
+            f"🎉 Vorood movafagh! Khosh amadid",
         )

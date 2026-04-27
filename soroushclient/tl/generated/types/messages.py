@@ -826,3 +826,218 @@ class MessagesMessageViews(TLObject):
     views: Optional[List[MessageViews]]
     chats: Optional[List[Chat]]
     users: Optional[List[User]]
+
+class KeyboardButton(TLObject):
+    CONSTRUCTOR_ID = 0xA2FA4880
+
+    FIELDS = [
+        TLField("text", "string"),
+    ]
+
+
+class KeyboardButtonUrl(TLObject):
+    CONSTRUCTOR_ID = 0x258AFF05
+
+    FIELDS = [
+        TLField("text", "string"),
+        TLField("url", "string"),
+    ]
+
+
+
+class KeyboardButtonCallback(TLObject):
+    CONSTRUCTOR_ID = 0x35BBDB6B
+
+    FIELDS = [
+        TLField("flags", "int", flag_group=0, flag_indicator=True),
+        TLField("requires_password", "true", flag_group=0, flag_bit=0),
+        TLField("text", "string"),
+        TLField("data", "bytes"),
+    ]
+
+
+class KeyboardButtonRequestPhone(TLObject):
+    CONSTRUCTOR_ID = 0xB16A6C29
+
+    FIELDS = [
+        TLField("text", "string"),
+    ]
+
+class KeyboardButtonRequestGeoLocation(TLObject):
+    CONSTRUCTOR_ID = 0xFC796B3F
+
+    FIELDS = [
+        TLField("text", "string"),
+    ]
+
+
+class KeyboardButtonSwitchInline(TLObject):
+    CONSTRUCTOR_ID = 0x93B9FBB5
+
+    FIELDS = [
+        TLField("flags", "int", flag_group=0, flag_indicator=True),
+        TLField("same_peer", "true", flag_group=0, flag_bit=0),
+        TLField("text", "string"),
+        TLField("query", "string"),
+        TLField("peer_types", "InlineQueryPeerType", flag_group=0, flag_bit=1, is_vector=True),
+    ]
+
+
+class KeyboardButtonGame(TLObject):
+    CONSTRUCTOR_ID = 0x50F41CCF
+
+    FIELDS = [
+        TLField("text", "string"),
+    ]
+
+
+class KeyboardButtonBuy(TLObject):
+    CONSTRUCTOR_ID = 0xAFD93FBB
+
+    FIELDS = [
+        TLField("text", "string"),
+    ]
+
+
+class KeyboardButtonUrlAuth(TLObject):
+    CONSTRUCTOR_ID = 0x10B78D29
+
+    FIELDS = [
+        TLField("flags", "int", flag_group=0, flag_indicator=True),
+        TLField("text", "string"),
+        TLField("fwd_text", "string", flag_group=0, flag_bit=0),
+        TLField("url", "string"),
+        TLField("button_id", "int"),
+    ]
+
+class InputKeyboardButtonUrlAuth(TLObject):
+    CONSTRUCTOR_ID = 0xD02E7FD4
+
+    FIELDS = [
+        TLField("flags", "int", flag_group=0, flag_indicator=True),
+        TLField("request_write_access", "true", flag_group=0, flag_bit=0),
+        TLField("text", "string"),
+        TLField("fwd_text", "string", flag_group=0, flag_bit=1),
+        TLField("url", "string"),
+        TLField("bot", "InputUser"),
+    ]
+
+
+class KeyboardButtonRequestPoll(TLObject):
+    CONSTRUCTOR_ID = 0xBBC7515D
+
+    FIELDS = [
+        TLField("flags", "int", flag_group=0, flag_indicator=True),
+        TLField("quiz", "Bool", flag_group=0, flag_bit=0),
+        TLField("text", "string"),
+    ]
+
+
+class InputKeyboardButtonUserProfile(TLObject):
+    CONSTRUCTOR_ID = 0xE988037B
+
+    FIELDS = [
+        TLField("text", "string"),
+        TLField("user_id", "InputUser"),
+    ]
+
+
+class KeyboardButtonUserProfile(TLObject):
+    CONSTRUCTOR_ID = 0x308660C1
+
+    FIELDS = [
+        TLField("text", "string"),
+        TLField("user_id", "long"),
+    ]
+
+
+class KeyboardButtonWebView(TLObject):
+    CONSTRUCTOR_ID = 0x13767230
+
+    FIELDS = [
+        TLField("text", "string"),
+        TLField("url", "string"),
+    ]
+
+class KeyboardButtonSimpleWebView(TLObject):
+    CONSTRUCTOR_ID = 0xA0C0505C
+
+    FIELDS = [
+        TLField("text", "string"),
+        TLField("url", "string"),
+    ]
+
+
+
+class KeyboardButtonRequestPeer(TLObject):
+    CONSTRUCTOR_ID = 0x0D0B468C
+
+    FIELDS = [
+        TLField("text", "string"),
+        TLField("button_id", "int"),
+        TLField("peer_type", "RequestPeerType"),
+    ]
+
+
+
+class KeyboardButtonRow(TLObject):
+    CONSTRUCTOR_ID = 0x77608B83
+
+    FIELDS = [
+        TLField("buttons", "KeyboardButton", is_vector=True),
+    ]
+
+
+class ReplyKeyboardHide(TLObject):
+    CONSTRUCTOR_ID = 0xA03E5B85
+
+    FIELDS = [
+        TLField("flags", "int", flag_group=0, flag_indicator=True),
+        TLField("selective", "true", flag_group=0, flag_bit=2),
+    ]
+
+
+class ReplyKeyboardForceReply(TLObject):
+    CONSTRUCTOR_ID = 0x86B40B08
+
+    FIELDS = [
+        TLField("flags", "int", flag_group=0, flag_indicator=True),
+        TLField("single_use", "true", flag_group=0, flag_bit=1),
+        TLField("selective", "true", flag_group=0, flag_bit=2),
+        TLField("placeholder", "string", flag_group=0, flag_bit=3),
+    ]
+
+class ReplyKeyboardMarkup(TLObject):
+    CONSTRUCTOR_ID = 0x85DD99D1
+
+    FIELDS = [
+        TLField("flags", "int", flag_group=0, flag_indicator=True),
+        TLField("resize", "true", flag_group=0, flag_bit=0),
+        TLField("single_use", "true", flag_group=0, flag_bit=1),
+        TLField("selective", "true", flag_group=0, flag_bit=2),
+        TLField("persistent", "true", flag_group=0, flag_bit=4),
+        TLField("rows", "KeyboardButtonRow", is_vector=True),
+        TLField("placeholder", "string", flag_group=0, flag_bit=3),
+    ]
+
+
+class ReplyInlineMarkup(TLObject):
+    CONSTRUCTOR_ID = 0x48A30254
+
+    FIELDS = [
+        TLField("rows", "KeyboardButtonRow", is_vector=True),
+    ]
+
+
+class BotInfo(TLObject):
+    CONSTRUCTOR_ID = 0x8F300B57
+
+    FIELDS = [
+        TLField("flags", "int", flag_group=0, flag_indicator=True),
+        TLField("user_id", "long", flag_group=0, flag_bit=0),
+        TLField("description", "string", flag_group=0, flag_bit=1),
+        TLField("description_photo", "Photo", flag_group=0, flag_bit=4),
+        TLField("description_document", "Document", flag_group=0, flag_bit=5),
+        TLField("commands", "BotCommand", flag_group=0, flag_bit=2, is_vector=True),
+        TLField("menu_button", "BotMenuButton", flag_group=0, flag_bit=3),
+    ]
