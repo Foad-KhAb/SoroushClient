@@ -73,9 +73,8 @@ class TLObject:
     def read_object_with_cid(cid: int, r: TLReader) -> "TLObject":
         cls = TLObject._registry.get(cid)
         if cls is None:
-            return UnknownObject(cid)
+            raise ValueError(f"Unknown constructor id={cid} at pos={r._pos}")
         return cls.from_reader(r)
-
 
 class UnknownObject(TLObject):
     def __init__(self, cid: int, error: Optional[str] = None):
