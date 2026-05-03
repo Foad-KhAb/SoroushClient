@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, List, Optional
 
 from soroushclient.tl.base import TLField, TLObject
-from soroushclient.tl.generated import BaseMessage
+from soroushclient.tl.generated import BaseMessage, InputUser
 
 if TYPE_CHECKING:
     from soroushclient.tl.generated import Chat, Peer, PeerNotifySettings, User
@@ -124,7 +124,7 @@ class MessageMediaGeo(TLObject):
 
 
 class MessageFwdHeader(TLObject):
-    CONSTRUCTOR_ID = 0x4E4DF4BB
+    CONSTRUCTOR_ID = 0x5F777DCE
     FIELDS = [
         TLField("flags", "int", flag_group=0, flag_indicator=True),
         TLField("imported", "true", flag_group=0, flag_bit=7),
@@ -135,16 +135,16 @@ class MessageFwdHeader(TLObject):
         TLField("post_author", "string", flag_group=0, flag_bit=3),
         TLField("saved_from_peer", "Peer", flag_group=0, flag_bit=4),
         TLField("saved_from_msg_id", "int", flag_group=0, flag_bit=4),
-        TLField("psa_type", "string", flag_group=0, flag_bit=11),
+        TLField("psa_type", "string", flag_group=0, flag_bit=6),
     ]
 
     imported: Optional[bool]
-    from_id: Optional[TLObject]
+    from_id: Optional[Peer]
     from_name: Optional[str]
     date: Optional[int]
     channel_post: Optional[int]
     post_author: Optional[str]
-    saved_from_peer: Optional[TLObject]
+    saved_from_peer: Optional[Peer]
     saved_from_msg_id: Optional[int]
     psa_type: Optional[str]
 
@@ -180,66 +180,101 @@ class MessageReplyHeader(TLObject):
     quote_entities: Optional[List[TLObject]]
     quote_offset: Optional[int]
 
-
 class MessageEntityUnknown(TLObject):
     CONSTRUCTOR_ID = 0xBB92BA95
-    FIELDS = [TLField("offset", "int"), TLField("length", "int")]
+    FIELDS = [
+        TLField("offset", "int"),
+        TLField("length", "int"),
+    ]
+
     offset: Optional[int]
     length: Optional[int]
 
 
 class MessageEntityMention(TLObject):
     CONSTRUCTOR_ID = 0xFA04579D
-    FIELDS = [TLField("offset", "int"), TLField("length", "int")]
+    FIELDS = [
+        TLField("offset", "int"),
+        TLField("length", "int"),
+    ]
+
     offset: Optional[int]
     length: Optional[int]
 
 
 class MessageEntityHashtag(TLObject):
     CONSTRUCTOR_ID = 0x6F635B0D
-    FIELDS = [TLField("offset", "int"), TLField("length", "int")]
+    FIELDS = [
+        TLField("offset", "int"),
+        TLField("length", "int"),
+    ]
+
     offset: Optional[int]
     length: Optional[int]
 
 
 class MessageEntityBotCommand(TLObject):
     CONSTRUCTOR_ID = 0x6CEF8AC7
-    FIELDS = [TLField("offset", "int"), TLField("length", "int")]
+    FIELDS = [
+        TLField("offset", "int"),
+        TLField("length", "int"),
+    ]
+
     offset: Optional[int]
     length: Optional[int]
 
 
 class MessageEntityUrl(TLObject):
     CONSTRUCTOR_ID = 0x6ED02538
-    FIELDS = [TLField("offset", "int"), TLField("length", "int")]
+    FIELDS = [
+        TLField("offset", "int"),
+        TLField("length", "int"),
+    ]
+
     offset: Optional[int]
     length: Optional[int]
 
 
 class MessageEntityEmail(TLObject):
     CONSTRUCTOR_ID = 0x64E475C2
-    FIELDS = [TLField("offset", "int"), TLField("length", "int")]
+    FIELDS = [
+        TLField("offset", "int"),
+        TLField("length", "int"),
+    ]
+
     offset: Optional[int]
     length: Optional[int]
 
 
 class MessageEntityBold(TLObject):
     CONSTRUCTOR_ID = 0xBD610BC9
-    FIELDS = [TLField("offset", "int"), TLField("length", "int")]
+    FIELDS = [
+        TLField("offset", "int"),
+        TLField("length", "int"),
+    ]
+
     offset: Optional[int]
     length: Optional[int]
 
 
 class MessageEntityItalic(TLObject):
     CONSTRUCTOR_ID = 0x826F8B60
-    FIELDS = [TLField("offset", "int"), TLField("length", "int")]
+    FIELDS = [
+        TLField("offset", "int"),
+        TLField("length", "int"),
+    ]
+
     offset: Optional[int]
     length: Optional[int]
 
 
 class MessageEntityCode(TLObject):
     CONSTRUCTOR_ID = 0x28A20571
-    FIELDS = [TLField("offset", "int"), TLField("length", "int")]
+    FIELDS = [
+        TLField("offset", "int"),
+        TLField("length", "int"),
+    ]
+
     offset: Optional[int]
     length: Optional[int]
 
@@ -267,7 +302,7 @@ class MessageEntityTextUrl(TLObject):
 
     offset: Optional[int]
     length: Optional[int]
-    language: Optional[str]
+    url: Optional[str]
 
 
 class MessageEntityMentionName(TLObject):
@@ -280,47 +315,84 @@ class MessageEntityMentionName(TLObject):
 
     offset: Optional[int]
     length: Optional[int]
-    language: Optional[str]
+    user_id: Optional[int]
+
+
+class InputMessageEntityMentionName(TLObject):
+    CONSTRUCTOR_ID = 0x208E68C9
+    FIELDS = [
+        TLField("offset", "int"),
+        TLField("length", "int"),
+        TLField("user_id", "InputUser"),
+    ]
+
+    offset: Optional[int]
+    length: Optional[int]
+    user_id: Optional[InputUser]
 
 
 class MessageEntityPhone(TLObject):
     CONSTRUCTOR_ID = 0x9B69E34B
-    FIELDS = [TLField("offset", "int"), TLField("length", "int")]
+    FIELDS = [
+        TLField("offset", "int"),
+        TLField("length", "int"),
+    ]
+
     offset: Optional[int]
     length: Optional[int]
 
 
 class MessageEntityCashtag(TLObject):
     CONSTRUCTOR_ID = 0x4C4E743F
-    FIELDS = [TLField("offset", "int"), TLField("length", "int")]
+    FIELDS = [
+        TLField("offset", "int"),
+        TLField("length", "int"),
+    ]
+
     offset: Optional[int]
     length: Optional[int]
 
 
 class MessageEntityUnderline(TLObject):
     CONSTRUCTOR_ID = 0x9C4E7E8B
-    FIELDS = [TLField("offset", "int"), TLField("length", "int")]
+    FIELDS = [
+        TLField("offset", "int"),
+        TLField("length", "int"),
+    ]
+
     offset: Optional[int]
     length: Optional[int]
 
 
 class MessageEntityStrike(TLObject):
     CONSTRUCTOR_ID = 0xBF0693D4
-    FIELDS = [TLField("offset", "int"), TLField("length", "int")]
+    FIELDS = [
+        TLField("offset", "int"),
+        TLField("length", "int"),
+    ]
+
+    offset: Optional[int]
+    length: Optional[int]
+
+
+class MessageEntityBankCard(TLObject):
+    CONSTRUCTOR_ID = 0x761E6AF4
+    FIELDS = [
+        TLField("offset", "int"),
+        TLField("length", "int"),
+    ]
+
     offset: Optional[int]
     length: Optional[int]
 
 
 class MessageEntitySpoiler(TLObject):
     CONSTRUCTOR_ID = 0x32CA960F
-    FIELDS = [TLField("offset", "int"), TLField("length", "int")]
-    offset: Optional[int]
-    length: Optional[int]
+    FIELDS = [
+        TLField("offset", "int"),
+        TLField("length", "int"),
+    ]
 
-
-class MessageEntityBlockquote(TLObject):
-    CONSTRUCTOR_ID = 0xF1CCAAAC
-    FIELDS = [TLField("offset", "int"), TLField("length", "int")]
     offset: Optional[int]
     length: Optional[int]
 
@@ -332,10 +404,21 @@ class MessageEntityCustomEmoji(TLObject):
         TLField("length", "int"),
         TLField("document_id", "long"),
     ]
+
     offset: Optional[int]
     length: Optional[int]
     document_id: Optional[int]
 
+
+class MessageEntityBlockquote(TLObject):
+    CONSTRUCTOR_ID = 0x020DF5D0
+    FIELDS = [
+        TLField("offset", "int"),
+        TLField("length", "int"),
+    ]
+
+    offset: Optional[int]
+    length: Optional[int]
 
 class MessageReplies(TLObject):
     CONSTRUCTOR_ID = 0x83D60FC2

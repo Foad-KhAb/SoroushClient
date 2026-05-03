@@ -74,10 +74,7 @@ class TLObject:
         cls = TLObject._registry.get(cid)
         if cls is None:
             return UnknownObject(cid)
-        try:
-            return cls.from_reader(r)
-        except Exception as e:
-            return UnknownObject(cid, error=str(e))
+        return cls.from_reader(r)
 
 
 class UnknownObject(TLObject):

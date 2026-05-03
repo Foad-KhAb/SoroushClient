@@ -23,3 +23,4 @@ from .types.updates import *
 from .types.users import *
 from .types.videos import *
 from .types.webpages import *
+from .types.poll import *
