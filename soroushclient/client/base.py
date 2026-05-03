@@ -15,25 +15,12 @@ from soroushclient.network.constants import (
 from soroushclient.network.session import MTProtoSession
 from soroushclient.network.transport import ObfuscatedTransport
 from soroushclient.tl.base import TLObject
-from soroushclient.tl.generated import (
-    CodeSettings,
-    GetFullChannelRequest,
-    InputChannel,
-    InputPeer,
-    InputPeerEmpty,
-    JoinChannelRequest,
-    LeaveChannelRequest,
-    ResolvedPeer,
-    ResolveUsername,
-    SendCodeRequest,
-    SentCode,
-    SignInRequest,
-)
-from soroushclient.tl.generated.functions.chats import GetFullChatRequest
-from soroushclient.tl.generated.functions.dialogs import GetDialogsRequest
+from soroushclient.tl.generated import SendCode, CodeSettings, SentCode, SignIn, InputPeerEmpty, InputChannel, \
+    GetFullChannelRequest, GetFullChatRequest, JoinChannelRequest, LeaveChannelRequest, ContactsResolvedPeer, \
+    ResolveUsername, InputPeerSelf, InputPeerChat, InputPeerUser, InputPeerChannel, GetDialogsRequest
 from soroushclient.tl.generated.functions.messages import (
     GetHistoryRequest,
-    ImportChatInvite,
+    GetMessagesViews, ImportChatInvite,
 )
 from soroushclient.tl.reader import TLReader
 from soroushclient.tl.writer import TLWriter
@@ -339,15 +326,9 @@ class SoroushClient:
 
         else:
             cls = TLObject._registry.get(cid)
-            if cls:
-                try:
-                    obj = cls.from_reader(r)
-                    if self._update_handlers:
-                        self._create_task(self._fire_update(obj))
-                except Exception as e:
-                    logger.warning(f"[dispatch] failed to parse cid={cid:#010x}: {e}")
-            else:
-                logger.warning(f"[dispatch] unhandled cid={cid:#010x}")
+            obj = cls.from_reader(r)
+            if self._update_handlers:
+                self._create_task(self._fire_update(obj))
 
     # ── Update handlers ────────────────────────────────────────────────────────
 
@@ -444,7 +425,7 @@ class SoroushClient:
             client=self,
         ).start()
 
-    async def send_code(self, phone: str) -> SentCode:
+    async def send_code(self, phone: str):
         """
         Request an OTP code for `phone`.
         Automatically connects if not already connected.
@@ -453,7 +434,7 @@ class SoroushClient:
         """
         if self._session is None:
             await self._do_connect()
-        req = SendCodeRequest(
+        req = SendCode(
             phone_number=phone,
             api_id=self.api_id,
             api_hash=self.api_hash,
@@ -472,7 +453,7 @@ class SoroushClient:
         if not self._phone or not self._phone_code_hash:
             raise RuntimeError("Call send_code() before sign_in().")
 
-        req = SignInRequest(
+        req = SignIn(
             phone_number=self._phone,
             phone_code_hash=self._phone_code_hash,
             phone_code=code,
@@ -562,7 +543,7 @@ class SoroushClient:
         result = await self._call(self._wrap_init(req.to_bytes()))
         return result
 
-    async def resolve_username(self, username: str) -> ResolvedPeer:
+    async def resolve_username(self, username: str) -> ContactsResolvedPeer:
         """
         Resolve a username to its full peer information.
 
@@ -600,7 +581,7 @@ class SoroushClient:
 
     async def get_history(
         self,
-        peer: InputPeer,
+        peer: Union[InputPeerEmpty, InputPeerSelf, InputPeerChat, InputPeerUser, InputPeerChannel],
         offset_id: int = 0,
         offset_date: int = 0,
         add_offset: int = 0,
@@ -707,7 +688,7 @@ class SoroushClient:
 
     async def get_messages_views(
         self,
-        peer: InputPeer,
+        peer,
         ids: List[int],
         increment: bool = False,
     ) -> TLObject:
@@ -736,7 +717,6 @@ class SoroushClient:
             - chats : list of Chat objects referenced in the response
             - users : list of User objects referenced in the response
         """
-        from soroushclient.tl.generated.functions.messages import GetMessagesViews
 
         req = GetMessagesViews(peer=peer, id=ids, increment=increment)
         result = await self._call(self._maybe_wrap(req.to_bytes()))

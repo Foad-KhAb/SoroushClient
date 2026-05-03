@@ -1,22 +1,20 @@
 from typing import Optional, List
 
-from soroushclient.tl.base import TLObject, TLField
-from soroushclient.tl.generated import Peer
+from soroushclient.tl.base import TLField, TLObject
 
 
 class PollAnswer(TLObject):
-    CONSTRUCTOR_ID = 0x6CA9C2E9
+    CONSTRUCTOR_ID = 1823064809
     FIELDS = [
         TLField("text", "string"),
         TLField("option", "bytes"),
     ]
-
     text: Optional[str]
     option: Optional[bytes]
 
 
 class Poll(TLObject):
-    CONSTRUCTOR_ID = 0x86E18161
+    CONSTRUCTOR_ID = 2262925665
     FIELDS = [
         TLField("id", "long"),
         TLField("flags", "int", flag_group=0, flag_indicator=True),
@@ -29,20 +27,19 @@ class Poll(TLObject):
         TLField("close_period", "int", flag_group=0, flag_bit=4),
         TLField("close_date", "int", flag_group=0, flag_bit=5),
     ]
-
     id: Optional[int]
     closed: Optional[bool]
     public_voters: Optional[bool]
     multiple_choice: Optional[bool]
     quiz: Optional[bool]
     question: Optional[str]
-    answers: Optional[List[PollAnswer]]
+    answers: Optional[List[TLObject]]
     close_period: Optional[int]
     close_date: Optional[int]
 
 
 class PollAnswerVoters(TLObject):
-    CONSTRUCTOR_ID = 0x3B6DDAD2
+    CONSTRUCTOR_ID = 997055186
     FIELDS = [
         TLField("flags", "int", flag_group=0, flag_indicator=True),
         TLField("chosen", "true", flag_group=0, flag_bit=0),
@@ -50,7 +47,6 @@ class PollAnswerVoters(TLObject):
         TLField("option", "bytes"),
         TLField("voters", "int"),
     ]
-
     chosen: Optional[bool]
     correct: Optional[bool]
     option: Optional[bytes]
@@ -58,7 +54,7 @@ class PollAnswerVoters(TLObject):
 
 
 class PollResults(TLObject):
-    CONSTRUCTOR_ID = 0x7ADF2420
+    CONSTRUCTOR_ID = 2061444128
     FIELDS = [
         TLField("flags", "int", flag_group=0, flag_indicator=True),
         TLField("min", "true", flag_group=0, flag_bit=0),
@@ -68,10 +64,9 @@ class PollResults(TLObject):
         TLField("solution", "string", flag_group=0, flag_bit=4),
         TLField("solution_entities", "MessageEntity", flag_group=0, flag_bit=4, is_vector=True),
     ]
-
     min: Optional[bool]
-    results: Optional[List[PollAnswerVoters]]
+    results: Optional[List[TLObject]]
     total_voters: Optional[int]
-    recent_voters: Optional[List[Peer]]
+    recent_voters: Optional[List[TLObject]]
     solution: Optional[str]
-    solution_entities: Optional[List]
+    solution_entities: Optional[List[TLObject]]
