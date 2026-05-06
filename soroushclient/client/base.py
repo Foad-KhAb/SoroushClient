@@ -17,7 +17,8 @@ from soroushclient.network.transport import ObfuscatedTransport
 from soroushclient.tl.base import TLObject
 from soroushclient.tl.generated import SendCode, CodeSettings, SentCode, SignIn, InputPeerEmpty, InputChannel, \
     GetFullChannelRequest, GetFullChatRequest, JoinChannelRequest, LeaveChannelRequest, ContactsResolvedPeer, \
-    ResolveUsername, InputPeerSelf, InputPeerChat, InputPeerUser, InputPeerChannel, GetDialogsRequest
+    ResolveUsername, InputPeerSelf, InputPeerChat, InputPeerUser, InputPeerChannel, GetDialogsRequest, PeerChannel, \
+    PeerUser, PeerChat
 from soroushclient.tl.generated.functions.messages import (
     GetHistoryRequest,
     GetMessagesViews, ImportChatInvite,
@@ -473,6 +474,51 @@ class SoroushClient:
         )
         result = await self._call(self._maybe_wrap(req.to_bytes()))
         return result
+
+    def peer_to_input_peer(self, peer, result):
+        """Convert a Peer to InputPeer using the chats/users from the result."""
+        if isinstance(peer, PeerChannel):
+            chat = next(c for c in result.chats if c.id == peer.channel_id)
+            return InputPeerChannel(channel_id=chat.id, access_hash=chat.access_hash)
+        elif isinstance(peer, PeerUser):
+            user = next(u for u in result.users if u.id == peer.user_id)
+            return InputPeerUser(user_id=user.id, access_hash=user.access_hash)
+        elif isinstance(peer, PeerChat):
+            return InputPeerChat(chat_id=peer.chat_id)
+
+    async def get_all_dialogs(self):
+        all_dialogs = []
+        offset_date = 0
+        offset_id = 0
+        offset_peer = InputPeerEmpty()
+
+        while True:
+            result = await self.get_dialogs(
+                offset_date=offset_date,
+                offset_id=offset_id,
+                offset_peer=offset_peer,
+                limit=100,
+            )
+
+            dialogs = result.dialogs
+            if not dialogs:
+                break
+
+            for dialog in dialogs:
+                input_peer = self.peer_to_input_peer(dialog.peer, result)
+                all_dialogs.append({
+                    "dialog": dialog,
+                    "input_peer": input_peer,
+                })
+
+            if len(dialogs) < 100:
+                break
+
+            last = result.messages[-1]
+            offset_date = last.date
+            offset_id = last.id
+            offset_peer = self.peer_to_input_peer(dialogs[-1].peer, result)
+        return all_dialogs
 
     async def get_full_channel(self, channel: InputChannel) -> TLObject:
         req = GetFullChannelRequest(channel=channel)

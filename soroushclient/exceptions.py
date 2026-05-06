@@ -33,6 +33,7 @@ _ERROR_MAP: dict[str, type[RpcException]] = {
     "NOT_FOUND": NotFoundError,
     "USERNAME_NOT_OCCUPIED": UsernameNotOccupiedError,
     "CHANNEL_PRIVATE": ChannelPrivateError,
+    "FLOOD_WAIT": FloodWaitError,
 }
 
 
