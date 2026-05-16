@@ -5,6 +5,7 @@ import ssl as ssl_mod
 import struct
 
 import websockets
+
 from soroushclient.crypto.aes import aes_ctr
 
 logger = logging.getLogger(__name__)
