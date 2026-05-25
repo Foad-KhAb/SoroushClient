@@ -75,9 +75,9 @@ class Authorization(TLObject):
     FIELDS = [
         TLField("flags", "int", flag_group=0, flag_indicator=True),
         TLField("setup_password_required", "true", flag_group=0, flag_bit=1),
-        TLField("otherwise_relogin_days", "int", flag_group=0, flag_bit=1),
-        TLField("tmp_sessions", "int", flag_group=0, flag_bit=0),
-        TLField("future_auth_token", "bytes", flag_group=0, flag_bit=2),
+        TLField("otherwise_relogin_days", "int", flag_group=0, flag_bit=1, skip_cid=True),
+        TLField("tmp_sessions", "int", flag_group=0, flag_bit=0, skip_cid=True),
+        TLField("future_auth_token", "bytes", flag_group=0, flag_bit=2, skip_cid=True),
         TLField("user", "User"),
     ]
     setup_password_required: Optional[bool]

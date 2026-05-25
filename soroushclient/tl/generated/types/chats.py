@@ -146,16 +146,6 @@ class ExportedChatInviteReplaced(TLObject):
         TLField("users", "User", is_vector=True),
     ]
 
-
-class MessagesChatFull(TLObject):
-    CONSTRUCTOR_ID = 0xE5D7D19C
-    FIELDS = [
-        TLField("full_chat", "ChatFull"),
-        TLField("chats", "Chat", is_vector=True),
-        TLField("users", "User", is_vector=True),
-    ]
-
-
 class ExportedChatInvites(TLObject):
     CONSTRUCTOR_ID = 0xBDC62DCC
     FIELDS = [

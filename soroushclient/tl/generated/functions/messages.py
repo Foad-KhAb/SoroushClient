@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from soroushclient.tl.base import TLField, TLRequest
+from soroushclient.tl.base import TLField, TLRequest, TLObject
 from soroushclient.tl.generated import BaseMessage, InputPeer, MessageViews, Updates
 
 
@@ -48,3 +48,8 @@ class GetMessagesViews(TLRequest):
     peer: Optional[InputPeer]
     id: Optional[List[int]]
     increment: Optional[bool]
+class ToggleDialogFilterTags(TLObject):
+    CONSTRUCTOR_ID = 0xFD2DDA49
+    FIELDS = [
+        TLField("enabled", "Bool", skip_cid=False),
+    ]

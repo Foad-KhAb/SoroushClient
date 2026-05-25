@@ -41,18 +41,25 @@ class UserStatusOffline(TLObject):
 
 
 class UserStatusRecently(TLObject):
-    CONSTRUCTOR_ID = 0xE26F42F1
-    FIELDS = []
-
+    CONSTRUCTOR_ID = 0x7B197DC8
+    FIELDS = [
+        TLField("flags", "int", flag_group=0, flag_indicator=True),
+        TLField("by_me", "true", flag_group=0, flag_bit=0),
+    ]
 
 class UserStatusLastWeek(TLObject):
-    CONSTRUCTOR_ID = 0x07BF09FC
-    FIELDS = []
-
+    CONSTRUCTOR_ID = 0x541A1D1A
+    FIELDS = [
+        TLField("flags", "int", flag_group=0, flag_indicator=True),
+        TLField("by_me", "true", flag_group=0, flag_bit=0),
+    ]
 
 class UserStatusLastMonth(TLObject):
-    CONSTRUCTOR_ID = 0x77EBC742
-    FIELDS = []
+    CONSTRUCTOR_ID = 0x65899777
+    FIELDS = [
+        TLField("flags", "int", flag_group=0, flag_indicator=True),
+        TLField("by_me", "true", flag_group=0, flag_bit=0),
+    ]
 
 
 class UserTypeNormal(TLObject):
@@ -150,3 +157,11 @@ class Username(TLObject):
     editable: Optional[bool]
     active: Optional[bool]
     username: Optional[str]
+
+class UserFullCustom(TLObject):
+    CONSTRUCTOR_ID = 0x2F5A5335
+    FIELDS = [
+        TLField("flags", "int", flag_group=0, flag_indicator=True),
+        TLField("gender", "Gender", flag_group=0, flag_bit=0),
+        TLField("participant_location", "ParticipantLocation", flag_group=0, flag_bit=1),
+    ]

@@ -237,3 +237,15 @@ class ChannelFull(TLObject):
     default_send_as: Optional[TLObject]
     available_reactions: Optional[TLObject]
     stories: Optional[TLObject]
+class ChannelFullCustom(TLObject):
+    CONSTRUCTOR_ID = 0xAB97C375
+    FIELDS = [
+        TLField("flags", "int", flag_group=0, flag_indicator=True),
+        TLField("membership_message_visibility", "true", flag_group=0, flag_bit=0),
+    ]
+
+class ParticipantLocation(TLObject):
+    CONSTRUCTOR_ID = 0xF449BF69
+    FIELDS = [
+        TLField("address", "string", skip_cid=True),
+    ]

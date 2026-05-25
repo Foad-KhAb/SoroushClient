@@ -40,3 +40,10 @@ class GetChannelDifference(TLRequest):
     filter: Optional[TLObject]
     pts: Optional[int]
     limit: Optional[int]
+
+class ToggleMembershipMessageVisibility(TLObject):
+    CONSTRUCTOR_ID = 0x075646C0
+    FIELDS = [
+        TLField("channel", "InputChannel"),
+        TLField("enabled", "Bool", skip_cid=False),
+    ]
