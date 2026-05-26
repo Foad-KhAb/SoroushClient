@@ -46,6 +46,9 @@ class UserStatusRecently(TLObject):
         TLField("flags", "int", flag_group=0, flag_indicator=True),
         TLField("by_me", "true", flag_group=0, flag_bit=0),
     ]
+class UserStatusRecentlyV2(TLObject):
+    CONSTRUCTOR_ID = 3798942449
+    FIELDS = []
 
 class UserStatusLastWeek(TLObject):
     CONSTRUCTOR_ID = 0x541A1D1A
@@ -53,6 +56,9 @@ class UserStatusLastWeek(TLObject):
         TLField("flags", "int", flag_group=0, flag_indicator=True),
         TLField("by_me", "true", flag_group=0, flag_bit=0),
     ]
+class UserStatusLastWeekV2(TLObject):
+    CONSTRUCTOR_ID = 0x07BF09FC
+    FIELDS = []
 
 class UserStatusLastMonth(TLObject):
     CONSTRUCTOR_ID = 0x65899777
@@ -60,6 +66,9 @@ class UserStatusLastMonth(TLObject):
         TLField("flags", "int", flag_group=0, flag_indicator=True),
         TLField("by_me", "true", flag_group=0, flag_bit=0),
     ]
+class UserStatusLastMonthV2(TLObject):
+    CONSTRUCTOR_ID = 0x77EBC742
+    FIELDS = []
 
 
 class UserTypeNormal(TLObject):
