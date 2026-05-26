@@ -387,9 +387,3 @@ class MessageActionGiveawayResults(TLObject):
 class MessageActionContactReturned(TLObject):
     CONSTRUCTOR_ID = 508031610
     FIELDS = []
-
-class MessageActionProtectedMessage(TLObject):
-    CONSTRUCTOR_ID = 0xB8257746
-    FIELDS = [
-        TLField("id", "string", skip_cid=True),
-    ]
