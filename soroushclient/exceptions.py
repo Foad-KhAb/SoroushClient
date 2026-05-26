@@ -1,6 +1,5 @@
 class SoroushError(Exception):
     """Base exception for all Soroush errors."""
-
     pass
 
 
@@ -12,22 +11,12 @@ class RpcException(SoroushError):
 
 
 # ── 400 errors ────────────────────────────────────────────────────────────────
-class UsernameInvalidError(RpcException):
-    pass
-
-
-class NotFoundError(RpcException):
-    pass
-
-
-class ChannelPrivateError(RpcException):
-    pass
-
+class UsernameInvalidError(RpcException): pass
+class NotFoundError(RpcException): pass
+class ChannelPrivateError(RpcException): pass
 
 # ── 404 errors ────────────────────────────────────────────────────────────────
-class UsernameNotOccupiedError(RpcException):
-    pass
-
+class UsernameNotOccupiedError(RpcException): pass
 
 # ── 420 errors ────────────────────────────────────────────────────────────────
 class FloodWaitError(RpcException):
@@ -44,6 +33,7 @@ _ERROR_MAP: dict[str, type[RpcException]] = {
     "NOT_FOUND": NotFoundError,
     "USERNAME_NOT_OCCUPIED": UsernameNotOccupiedError,
     "CHANNEL_PRIVATE": ChannelPrivateError,
+    "FLOOD_WAIT": FloodWaitError,
 }
 
 
