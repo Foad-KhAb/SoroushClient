@@ -351,12 +351,6 @@ class MessageEntityBlockquote(TLObject):
     offset: Optional[int]
     length: Optional[int]
 
-class MessageEntityBlockquoteV2(TLObject):
-    CONSTRUCTOR_ID = 34469328
-    FIELDS = [TLField("offset", "int"), TLField("length", "int")]
-    offset: Optional[int]
-    length: Optional[int]
-
 
 class MessageEntityCustomEmoji(TLObject):
     CONSTRUCTOR_ID = 0xC8CF05F8
