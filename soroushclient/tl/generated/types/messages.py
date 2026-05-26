@@ -593,40 +593,6 @@ class Message(BaseMessage):
     reactions: Optional[TLObject]
     restriction_reason: Optional[List[TLObject]]
     ttl_period: Optional[int]
-    def get_entities_text(self, cls=None):
-        """
-        Returns a list of ``(markup entity, inner text)``
-        (like bold or italics).
-
-        The markup entity is a :tl:`MessageEntity` that represents bold,
-        italics, etc., and the inner text is the `str` inside that markup
-        entity.
-
-        For example:
-
-        .. code-block:: python
-
-            print(repr(message.text))  # shows: 'Hello **world**!'
-
-            for ent, txt in message.get_entities_text():
-                print(ent)  # shows: MessageEntityBold(offset=6, length=5)
-                print(txt)  # shows: world
-
-        Args:
-            cls (`type`):
-                Returns entities matching this type only. For example,
-                the following will print the text for all ``code`` entities:
-
-        """
-        ent = self.entities
-        if not ent:
-            return []
-
-        if cls:
-            ent = [c for c in ent if isinstance(c, cls)]
-
-        texts = utils.get_inner_text(self.message, ent)
-        return list(zip(ent, texts))
 
 
 class MessageService(TLObject):
