@@ -86,15 +86,32 @@ def _deserialize(cls: Type[TLObject], r: TLReader) -> TLObject:
             if not (flags_map.get(f.flag_group, 0) & (1 << f.flag_bit)):
                 kwargs[f.name] = None
                 continue
-        if f.is_vector:
-            r.read_int(signed=False)
-            count = r.read_int()
-            items = []
-            for _ in range(count):
-                items.append(_read_value(r, f.type, f.skip_cid))
-            kwargs[f.name] = items
-        else:
-            kwargs[f.name] = _read_value(r, f.type, f.skip_cid)
+        try:
+            if f.is_vector:
+                r.read_int(signed=False)
+                count = r.read_int()
+                items = []
+                for _ in range(count):
+                    try:
+                        items.append(_read_value(r, f.type, f.skip_cid))
+                    except Exception as e:
+                        logger.warning(f"[tl] {cls.__name__}.{f.name}[{_}] failed: {e}")
+                        import traceback
+
+                        traceback.print_exc()
+                        break
+                kwargs[f.name] = items
+            else:
+                kwargs[f.name] = _read_value(r, f.type, f.skip_cid)
+        except Exception as e:
+            logger.warning(
+                f"[tl] Error deserializing {cls.__name__}.{f.name} (type={f.type}) at pos={r._pos}: {e}"
+            )
+            import traceback
+
+            traceback.print_exc()
+            kwargs[f.name] = None
+            continue
     for f in cls.FIELDS:
         if f.flag_bit >= 0 and f.type == "true":
             kwargs[f.name] = bool(flags_map.get(f.flag_group, 0) & (1 << f.flag_bit))

@@ -15,13 +15,25 @@ from soroushclient.network.constants import (
 from soroushclient.network.session import MTProtoSession
 from soroushclient.network.transport import ObfuscatedTransport
 from soroushclient.tl.base import TLObject
-from soroushclient.tl.generated import SendCode, CodeSettings, SentCode, SignIn, InputPeerEmpty, InputChannel, \
-    GetFullChannelRequest, GetFullChatRequest, JoinChannelRequest, LeaveChannelRequest, ContactsResolvedPeer, \
-    ResolveUsername, InputPeerSelf, InputPeerChat, InputPeerUser, InputPeerChannel, GetDialogsRequest, PeerChannel, \
-    PeerUser, PeerChat
+from soroushclient.tl.generated import (
+    CodeSettings,
+    GetFullChannelRequest,
+    InputChannel,
+    InputPeer,
+    InputPeerEmpty,
+    JoinChannelRequest,
+    LeaveChannelRequest,
+    ResolvedPeer,
+    ResolveUsername,
+    SendCodeRequest,
+    SentCode,
+    SignInRequest,
+)
+from soroushclient.tl.generated.functions.chats import GetFullChatRequest
+from soroushclient.tl.generated.functions.dialogs import GetDialogsRequest
 from soroushclient.tl.generated.functions.messages import (
     GetHistoryRequest,
-    GetMessagesViews, ImportChatInvite,
+    ImportChatInvite,
 )
 from soroushclient.tl.reader import TLReader
 from soroushclient.tl.writer import TLWriter
@@ -31,7 +43,7 @@ import asyncio
 import json
 import os
 from contextlib import asynccontextmanager, suppress
-from typing import Callable, Dict, List, Optional, cast, Union
+from typing import Callable, Dict, List, Optional, Union, cast
 
 import websockets
 
@@ -67,12 +79,12 @@ class SoroushClient:
     """
 
     def __init__(
-            self,
-            api_id: int = int(os.environ.get("API_ID", 0)),
-            api_hash: str = "",
-            session_file: Optional[Union[str, pathlib.Path]] = "soroush.json",
-            lifespan=None,
-            reconnect_delay: float = 5.0,
+        self,
+        api_id: int = int(os.environ.get("API_ID", 0)),
+        api_hash: str = "",
+        session_file: Optional[Union[str, pathlib.Path]] = "soroush.json",
+        lifespan=None,
+        reconnect_delay: float = 5.0,
     ):
         self.api_id = api_id
         self.api_hash = api_hash
@@ -117,7 +129,6 @@ class SoroushClient:
 
         else:
             raise TypeError("session_file must be str، Path or bytes")
-
 
     # ── Context manager ────────────────────────────────────────────────────────
 
@@ -184,6 +195,7 @@ class SoroushClient:
 
         if not is_new:
             await self._ping()
+
     async def _do_disconnect(self):
         if self._transport:
             with suppress(Exception):
@@ -327,9 +339,15 @@ class SoroushClient:
 
         else:
             cls = TLObject._registry.get(cid)
-            obj = cls.from_reader(r)
-            if self._update_handlers:
-                self._create_task(self._fire_update(obj))
+            if cls:
+                try:
+                    obj = cls.from_reader(r)
+                    if self._update_handlers:
+                        self._create_task(self._fire_update(obj))
+                except Exception as e:
+                    logger.warning(f"[dispatch] failed to parse cid={cid:#010x}: {e}")
+            else:
+                logger.warning(f"[dispatch] unhandled cid={cid:#010x}")
 
     # ── Update handlers ────────────────────────────────────────────────────────
 
@@ -383,10 +401,11 @@ class SoroushClient:
             raise_rpc_error(obj.error_code, obj.error_message)
 
         return obj
+
     async def _ping(self):
         w = TLWriter()
         w.write_int(0x7ABE77EC, signed=False)
-        w.write_long(random.randint(0, 2 ** 63))
+        w.write_long(random.randint(0, 2**63))
         try:
             await self._session.send(w.getvalue())
             await asyncio.sleep(0.5)
@@ -426,7 +445,7 @@ class SoroushClient:
             client=self,
         ).start()
 
-    async def send_code(self, phone: str):
+    async def send_code(self, phone: str) -> SentCode:
         """
         Request an OTP code for `phone`.
         Automatically connects if not already connected.
@@ -435,7 +454,7 @@ class SoroushClient:
         """
         if self._session is None:
             await self._do_connect()
-        req = SendCode(
+        req = SendCodeRequest(
             phone_number=phone,
             api_id=self.api_id,
             api_hash=self.api_hash,
@@ -454,7 +473,7 @@ class SoroushClient:
         if not self._phone or not self._phone_code_hash:
             raise RuntimeError("Call send_code() before sign_in().")
 
-        req = SignIn(
+        req = SignInRequest(
             phone_number=self._phone,
             phone_code_hash=self._phone_code_hash,
             phone_code=code,
@@ -474,51 +493,6 @@ class SoroushClient:
         )
         result = await self._call(self._maybe_wrap(req.to_bytes()))
         return result
-
-    def peer_to_input_peer(self, peer, result):
-        """Convert a Peer to InputPeer using the chats/users from the result."""
-        if isinstance(peer, PeerChannel):
-            chat = next(c for c in result.chats if c.id == peer.channel_id)
-            return InputPeerChannel(channel_id=chat.id, access_hash=chat.access_hash)
-        elif isinstance(peer, PeerUser):
-            user = next(u for u in result.users if u.id == peer.user_id)
-            return InputPeerUser(user_id=user.id, access_hash=user.access_hash)
-        elif isinstance(peer, PeerChat):
-            return InputPeerChat(chat_id=peer.chat_id)
-
-    async def get_all_dialogs(self):
-        all_dialogs = []
-        offset_date = 0
-        offset_id = 0
-        offset_peer = InputPeerEmpty()
-
-        while True:
-            result = await self.get_dialogs(
-                offset_date=offset_date,
-                offset_id=offset_id,
-                offset_peer=offset_peer,
-                limit=100,
-            )
-
-            dialogs = result.dialogs
-            if not dialogs:
-                break
-
-            for dialog in dialogs:
-                input_peer = self.peer_to_input_peer(dialog.peer, result)
-                all_dialogs.append({
-                    "dialog": dialog,
-                    "input_peer": input_peer,
-                })
-
-            if len(dialogs) < 100:
-                break
-
-            last = result.messages[-1]
-            offset_date = last.date
-            offset_id = last.id
-            offset_peer = self.peer_to_input_peer(dialogs[-1].peer, result)
-        return all_dialogs
 
     async def get_full_channel(self, channel: InputChannel) -> TLObject:
         req = GetFullChannelRequest(channel=channel)
@@ -589,7 +563,7 @@ class SoroushClient:
         result = await self._call(self._wrap_init(req.to_bytes()))
         return result
 
-    async def resolve_username(self, username: str) -> ContactsResolvedPeer:
+    async def resolve_username(self, username: str) -> ResolvedPeer:
         """
         Resolve a username to its full peer information.
 
@@ -627,7 +601,7 @@ class SoroushClient:
 
     async def get_history(
         self,
-        peer: Union[InputPeerEmpty, InputPeerSelf, InputPeerChat, InputPeerUser, InputPeerChannel],
+        peer: InputPeer,
         offset_id: int = 0,
         offset_date: int = 0,
         add_offset: int = 0,
@@ -734,7 +708,7 @@ class SoroushClient:
 
     async def get_messages_views(
         self,
-        peer,
+        peer: InputPeer,
         ids: List[int],
         increment: bool = False,
     ) -> TLObject:
@@ -763,6 +737,7 @@ class SoroushClient:
             - chats : list of Chat objects referenced in the response
             - users : list of User objects referenced in the response
         """
+        from soroushclient.tl.generated.functions.messages import GetMessagesViews
 
         req = GetMessagesViews(peer=peer, id=ids, increment=increment)
         result = await self._call(self._maybe_wrap(req.to_bytes()))
