@@ -196,14 +196,15 @@ class MessagesChatsSlice(TLObject):
     chats: Optional[List[TLObject]]
 
 class MessagesChatFull(TLObject):
-    CONSTRUCTOR_ID = 0x05D7903A
+    CONSTRUCTOR_ID = 0xE5D7D19C
     FIELDS = [
-        TLField("flags", "int", flag_group=0, flag_indicator=True),
         TLField("full_chat", "ChatFull"),
         TLField("chats", "Chat", is_vector=True),
         TLField("users", "User", is_vector=True),
-        TLField("custom_info", "ChannelFullCustom", flag_group=0, flag_bit=0),
     ]
+    full_chat: Optional[TLObject]
+    chats: Optional[List[TLObject]]
+    users: Optional[List[TLObject]]
 
 class MessagesAffectedHistory(TLObject):
     CONSTRUCTOR_ID = 0xB45C69D1
