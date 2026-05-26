@@ -128,14 +128,6 @@ class ChatFull(TLObject):
         TLField("recent_requesters", "long", flag_group=0, flag_bit=17, is_vector=True),
         TLField("available_reactions", "ChatReactions", flag_group=0, flag_bit=18),
     ]
-class MessagesChatFull(TLObject):
-    CONSTRUCTOR_ID = 0xE5D7D19C
-    FIELDS = [
-        TLField("full_chat", "ChatFull"),
-        TLField("chats", "Chat", is_vector=True),
-        TLField("users", "User", is_vector=True),
-    ]
-
 
 
 class ExportedChatInviteResult(TLObject):
