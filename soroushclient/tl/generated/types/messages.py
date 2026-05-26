@@ -149,33 +149,6 @@ class MessageFwdHeader(TLObject):
     psa_type: Optional[str]
 
 
-class MessageFwdHeaderV2(TLObject):
-    # CID 0x5f777dce — new version; psa_type moved from bit 11 to bit 6
-    CONSTRUCTOR_ID = 0x5F777DCE
-    FIELDS = [
-        TLField("flags", "int", flag_group=0, flag_indicator=True),
-        TLField("imported", "true", flag_group=0, flag_bit=7),
-        TLField("from_id", "Peer", flag_group=0, flag_bit=0),
-        TLField("from_name", "string", flag_group=0, flag_bit=5),
-        TLField("date", "int"),
-        TLField("channel_post", "int", flag_group=0, flag_bit=2),
-        TLField("post_author", "string", flag_group=0, flag_bit=3),
-        TLField("saved_from_peer", "Peer", flag_group=0, flag_bit=4),
-        TLField("saved_from_msg_id", "int", flag_group=0, flag_bit=4),
-        TLField("psa_type", "string", flag_group=0, flag_bit=6),
-    ]
-
-    imported: Optional[bool]
-    from_id: Optional[TLObject]
-    from_name: Optional[str]
-    date: Optional[int]
-    channel_post: Optional[int]
-    post_author: Optional[str]
-    saved_from_peer: Optional[TLObject]
-    saved_from_msg_id: Optional[int]
-    psa_type: Optional[str]
-
-
 class MessageReplyHeader(TLObject):
     CONSTRUCTOR_ID = 0xAFBC09DB
     FIELDS = [
@@ -852,4 +825,3 @@ class MessagesMessageViews(TLObject):
     views: Optional[List[MessageViews]]
     chats: Optional[List[Chat]]
     users: Optional[List[User]]
-
