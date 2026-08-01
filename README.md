@@ -1,6 +1,23 @@
-# SoroushClient
+<div align="center">
 
-An async MTProto client for [Soroush Plus](https://splus.ir), written in pure Python.
+# SoroushClient 🚀
+
+**An async MTProto client for [Soroush Plus](https://splus.ir), written in pure Python**
+
+[![PyPI](https://img.shields.io/badge/PyPI-v0.1.21-blue)](https://pypi.org/project/soroushclient/)
+[![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12-blue)](pyproject.toml)
+[![Transport](https://img.shields.io/badge/transport-WebSocket%20%7C%20MTProto-informational)](soroushclient/network)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
+**[English](README.md)** | **[فارسی](README.fa.md)**
+
+</div>
+
+> **Important**
+> This is an unofficial, third-party MTProto client for Soroush Plus. It is not
+> affiliated with or endorsed by SPlusThon. Respect Soroush Plus's terms of
+> service and rate limits, keep your `api_hash`/session files private, and
+> never commit them to source control.
 
 ## Features
 
