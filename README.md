@@ -62,6 +62,23 @@ asyncio.run(main())
 See [`examples/session_creation.py`](examples/session_creation.py) for a
 minimal runnable script.
 
+## More examples
+
+The [`examples/`](examples) directory has runnable scripts for common tasks:
+
+| Script | What it shows |
+| --- | --- |
+| [`session_creation.py`](examples/session_creation.py) | Interactive phone login, creating a session file |
+| [`list_dialogs.py`](examples/list_dialogs.py) | Fetching all dialogs (chats/channels/users) |
+| [`read_history.py`](examples/read_history.py) | Reading message history from a channel |
+| [`search_and_resolve.py`](examples/search_and_resolve.py) | Global search and resolving a `@username` |
+| [`join_and_leave_channel.py`](examples/join_and_leave_channel.py) | Joining via invite link, fetching full channel info, leaving |
+| [`long_running_bot.py`](examples/long_running_bot.py) | Running in the background with an update handler |
+
+Each script expects an existing session file (`example.json`, created by
+`session_creation.py`) and placeholder channel/user IDs — replace those with
+real values from `search()` or `resolve_username()`.
+
 ## Long-running clients
 
 `SoroushClient` can also run in the background with an update handler and
