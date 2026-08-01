@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "soroushclient"
+version = "0.1.21"
+description = "MTProto client for Soroush Plus"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [
+    { name = "Foad.KhAb", email = "foad.kheirabady@gmail.com" },
+]
+requires-python = ">=3.11"
+dependencies = [
+    "websockets>=15.0,<16.0",
+    "cryptography>=45.0,<47.0",
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+Homepage = "https://github.com/Foad-KhAb/SoroushClient"
+Repository = "https://github.com/Foad-KhAb/SoroushClient"
+
+[tool.setuptools.packages.find]
+include = ["soroushclient*"]
+exclude = ["examples*", "tests*"]
